@@ -293,6 +293,12 @@ select.tin{appearance:none;-webkit-appearance:none;background-image:linear-gradi
 .wheel b{text-align:right;font-weight:600}
 .smk{display:grid;gap:12px}
 .rings2 circle{stroke-width:10}
+.nowl{font-size:12.5px;font-weight:600;color:var(--c,var(--accent));text-transform:uppercase;letter-spacing:.04em;margin:12px 0 0;padding-top:10px;border-top:1px solid var(--sep,rgba(60,60,67,.18))}
+.list>.nowl:first-child{margin-top:0;padding-top:0;border-top:0}
+.it.now{border-top:0}
+.it.now .tx b{font-weight:600}
+.nowx{display:grid;gap:8px;padding:0 0 12px 38px}
+.nowx .btns{gap:6px}
 
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .top .r{display:flex;gap:8px;align-items:center}
@@ -369,7 +375,7 @@ button,a,label,.chip,.ck,.it .tx{touch-action:manipulation}
       <input class="tin" type="text" id="ghRepo" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Закрытый репозиторий: podsnezhnik-data" autocorrect="off">
       <input class="tin" type="password" id="ghTok" autocomplete="off" spellcheck="false" placeholder="Токен доступа github_pat_…">
       <div class="btns"><button type="button" class="go" id="ghOn">Подключить</button><button type="button" class="go ghost" id="ghOff">Отключить</button></div>
-      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 16:50</p>
+      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 16:54</p>
     </div>
     <div class="ch" style="margin-top:14px"><h2>Резервная копия</h2></div>
     <div class="add-t">
@@ -782,8 +788,9 @@ const todoGroups=()=>{const tm=addD(TODAY,1),wk=addD(TODAY,7),open=L.todo.filter
   return[["late","Просрочено",by(t=>t.due&&t.due<TODAY)],["today","Сегодня",by(t=>t.due===TODAY)],["tom","Завтра",by(t=>t.due===tm)],["week","На неделе",by(t=>t.due>tm&&t.due<=wk)],["later","Позже",by(t=>t.due>wk)],["some","Когда-нибудь",by(t=>!t.due)]]};
 function todoRow(t,opts){const a=AN(t.area),g=t.goal&&L.goals.find(x=>x.id===t.goal),late=t.due&&t.due<TODAY&&!t.done;
   const meta=[t.mit&&!t.done?"главное дело дня":"",t.at&&!t.done?esc(t.at):"",t.due&&!(opts&&opts.noDate)?`<span class="${late?"late":""}">${dayName(t.due)}</span>`:"",a.n,g?"→ "+esc(g.t):""].filter(Boolean).join(" · ");
-  let h=`<div class="it${t.done?" on":""}" style="--c:var(${a.c})"><button type="button" class="ck" data-td="${t.id}" aria-pressed="${!!t.done}" aria-label="Отметить: ${esc(t.t)}"><svg><use href="#check"/></svg></button>
-    <button type="button" class="tx" data-tdo="${t.id}"><b>${t.star?'<span class="star">★</span> ':""}${esc(t.t)}</b><small>${meta}</small></button></div>`;
+  const isNow=opts&&opts.tab==="today"&&NOW&&NOW.k==="t"&&NOW.t.id===t.id&&!t.done;
+  let h=`${isNow?`<div class="nowl">Сейчас · ${NOW.src}</div>`:""}<div class="it${t.done?" on":""}${isNow?" now":""}" style="--c:var(${a.c})"><button type="button" class="ck" data-td="${t.id}" aria-pressed="${!!t.done}" aria-label="Отметить: ${esc(t.t)}"><svg><use href="#check"/></svg></button>
+    <button type="button" class="tx" data-tdo="${t.id}"><b>${t.star?'<span class="star">★</span> ':""}${esc(t.t)}</b><small>${meta}</small></button></div>${isNow?nowBox(NOW):""}`;
   if(tdOpen===t.id&&(!opts||!opts.tab||opts.tab===tab))h+=`<div class="ed2"><input class="tin" type="text" id="te_t" value="${esc(t.t)}" maxlength="120" aria-label="Текст задачи">
     <div class="chips">${[["Сегодня",TODAY],["Завтра",addD(TODAY,1)],["Через неделю",addD(TODAY,7)],["Когда-нибудь",""]].map(([n,v])=>`<button type="button" class="chip" data-tdue="${v}" aria-pressed="${t.due===v}">${n}</button>`).join("")}<button type="button" class="chip" data-tstar="1" aria-pressed="${t.star}">★ главное</button></div>
     <div class="r"><input class="tin" type="date" id="te_d" value="${t.due}" aria-label="Дата"><select class="tin" id="te_a" aria-label="Сфера">${TAREAS.map(x=>`<option value="${x.k}"${x.k===t.area?" selected":""}>${x.n}</option>`).join("")}</select></div>
@@ -827,6 +834,9 @@ function ftTick(){clearInterval(ftI);if(!FT)return;ftI=setInterval(()=>{const l=
 function ftEnd(full){if(!FT)return;const min=full?FT.dur:Math.round((Date.now()-FT.st)/60e3);const id=FT.id;FT.over=full?1:0;FT.min=min;
   if(min>0){const D=getDay(TODAY);withXp(()=>{D.fx=(D.fx||0)+min;setDay(TODAY,D)},$("t-today"),css("--accent"),full?"Фокус "+min+" мин, +"+Math.floor(min/5)+". Сделайте перерыв 5 минут":"Записано "+min+" мин фокуса",full?2:0)}
   FT={done:1,id,min};ftSave();renderToday()}
+let NOW=null;
+function nowBox(a){const D=getDay(TODAY),cx=ctxLine(a),low=D.e===1;
+  return `<div class="nowx">${cx?`<div class="ctx${cx.soft?" soft":""}">${cx.t}</div>`:""}<div class="btns">${a.k==="t"?`<button type="button" class="go ghost" data-ft="${a.t.id}">Фокус 25 мин</button><button type="button" class="lnk2" data-tmv="${a.t.id}">На завтра</button>`:(low?`<button type="button" class="go ghost" data-nh1="${a.t.id}">Минимум: ${esc(a.t.min||"хотя бы начать")}</button>`:"")}<button type="button" class="lnk2" data-skip="${a.k+a.t.id}">Не сейчас</button></div></div>`}
 function nextAction(){const D=getDay(TODAY),sl=nowSlot();
   const todos=L.todo.filter(t=>!t.done&&t.due&&t.due<=TODAY&&!skip.has("t"+t.id));
   const star=todos.filter(t=>t.star).sort((a,b)=>b.mit-a.mit);if(star.length)return{k:"t",t:star[0],src:star[0].mit?"Главное дело дня":"Важное сегодня"};
@@ -869,13 +879,7 @@ function renderToday(){const D=getDay(TODAY),s=dayStat(TODAY),hr=new Date().getH
   else if(FT&&FT.done){const t=L.todo.find(x=>x.id===FT.id);
     h+=`<section class="card now2"><div class="lbl">Фокус завершён · ${FT.min} мин</div><div class="tt">${t?esc(t.t):"Отрезок работы"}</div><div class="ctx">Перерыв 5 минут: встаньте, подвигайтесь, посмотрите вдаль. Потом решите, что дальше.</div>
       <div class="btns">${t&&!t.done?`<button type="button" class="go" data-ftdone="${t.id}">Задача сделана</button>`:""}${t&&!t.done?`<button type="button" class="go ghost" data-ft="${t.id}">Ещё 25 минут</button>`:""}<button type="button" class="lnk2" data-act="ftclose">Закрыть</button></div></section>`}
-  else{const a=nextAction();
-    if(a){const c=AN(a.t.area).c,low=D.e===1,cx=ctxLine(a);
-      h+=`<section class="card now2" style="--c:var(${c})"><div><div class="src">Сейчас · ${a.src}</div><div class="tt">${esc(a.t.t)}</div>${a.k==="h"&&a.t.cue?`<div class="note">${esc(capF(a.t.cue))}</div>`:""}</div>${cx?`<div class="ctx${cx.soft?" soft":""}">${cx.t}</div>`:""}
-        <div class="btns">${a.k==="h"?(low?`<button type="button" class="go" data-nh1="${a.t.id}">Минимум: ${esc(a.t.min||"хотя бы начать")}</button><button type="button" class="go ghost" data-nh2="${a.t.id}">Сделал полностью</button>`:`<button type="button" class="go" data-nh2="${a.t.id}">Сделал</button><button type="button" class="go ghost" data-nh1="${a.t.id}">Минимум: ${esc(a.t.min||"хотя бы начать")}</button>`)
-          :`<button type="button" class="go" data-nt="${a.t.id}">Сделал</button><button type="button" class="go ghost" data-ft="${a.t.id}">Фокус 25 мин</button><button type="button" class="lnk2" data-tmv="${a.t.id}">На завтра</button>`}
-          <button type="button" class="lnk2" data-skip="${a.k+a.t.id}">Не сейчас</button></div></section>`}
-    else if(D.am||habOn(TODAY).length||L.todo.length)h+=`<section class="card now2"><div class="src">Сейчас</div><div class="tt">На сегодня всё</div><p class="note">Запланированное закрыто. Отдых тоже часть плана.</p></section>`}
+  NOW=FT?null:nextAction();
   h+=smokeCard();
   // задачи на сегодня
   const today=L.todo.filter(t=>(t.due&&t.due<=TODAY&&!t.done)||(t.done===TODAY&&t.due&&t.due<=TODAY)).sort((x,y)=>(!!x.done-!!y.done)||(y.mit-x.mit)||(y.star-x.star));
@@ -888,8 +892,9 @@ function renderToday(){const D=getDay(TODAY),s=dayStat(TODAY),hr=new Date().getH
       <div class="leg2">${AREAS.map((x,i)=>`<div><i style="background:var(${x.c})"></i>${x.n}<b>${s.per[i].d}/${s.per[i].t}</b></div>`).join("")}<small class="note" style="font-size:13px">${s.perfect?"Все привычки дня закрыты":s.balance?"Баланс дня есть":"Баланс — здоровье плюс хотя бы ещё один принцип"}</small></div></div>
     ${AREAS.map(x=>{const ts=A.filter(t=>t.area===x.k),names=new Set(ts.map(t=>t.t)),sug=x.sug.filter(v=>!names.has(v.t));
       return `<div class="grp-t" style="--c:var(${x.c})"><i></i>${x.n}</div><div class="list">${ts.map(t=>{const l=D.d[t.id]||0,hi=habInfo(t),sub=l===1?"минимум засчитан · нажмите кружок, если сделали полностью":hi.missY&&!l?"вчера пропуск · сегодня важно не пропустить дважды":[t.cue,t.pair?"+ "+t.pair:"",hi.n?"закрепляется: "+Math.min(hi.n,66)+" из ~66 дней":""].filter(Boolean).join(" · ");
-        return `<div class="it${l===2?" on":l===1?" half":""}" style="--c:var(${x.c})"><button type="button" class="ck" data-hb="${t.id}" aria-pressed="${l>0}" aria-label="Отметить: ${esc(t.t)}"><svg><use href="#check"/></svg></button>
-        <div class="tx"><b>${esc(t.t)}</b><small>${esc(sub)}</small></div>${habEdit?`<button type="button" class="x" data-hdel="${t.id}">убрать</button>`:!l?`<button type="button" class="minb2" data-hmin="${t.id}">${esc(t.min||"минимум")}</button>`:""}</div>
+        const isNow=NOW&&NOW.k==="h"&&NOW.t.id===t.id&&!l;
+        return `${isNow?`<div class="nowl" style="--c:var(${x.c})">Сейчас · ${NOW.src}</div>`:""}<div class="it${l===2?" on":l===1?" half":""}${isNow?" now":""}" style="--c:var(${x.c})"><button type="button" class="ck" data-hb="${t.id}" aria-pressed="${l>0}" aria-label="Отметить: ${esc(t.t)}"><svg><use href="#check"/></svg></button>
+        <div class="tx"><b>${esc(t.t)}</b><small>${esc(sub)}</small></div>${habEdit?`<button type="button" class="x" data-hdel="${t.id}">убрать</button>`:!l?`<button type="button" class="minb2" data-hmin="${t.id}">${esc(t.min||"минимум")}</button>`:""}</div>${isNow?nowBox(NOW):""}
         ${habEdit?`<div class="ed2" data-hed="${t.id}"><div class="r"><input class="tin" type="text" data-hf="min" value="${esc(t.min||"")}" maxlength="60" placeholder="Минимум на 2 минуты" aria-label="Минимум"><input class="tin" type="text" data-hf="cue" value="${esc(t.cue||"")}" maxlength="60" placeholder="После чего делаю" aria-label="Привязка"></div><div class="r"><input class="tin" type="text" data-hf="pair" value="${esc(t.pair||"")}" maxlength="60" placeholder="Приятное в пару: подкаст, музыка" aria-label="Приятное в пару"><select class="tin" data-hf="slot" aria-label="Время суток"><option value="">любое время</option>${Object.keys(SLOT).map(k=>`<option value="${k}"${t.slot===k?" selected":""}>${SLOT[k]}</option>`).join("")}</select></div></div>`:""}`}).join("")}</div>
         ${(habEdit||!ts.length)&&sug.length?`<div class="chips" style="margin:6px 0">${sug.map(v=>`<button type="button" class="chip" data-hsug="${x.k}|${x.sug.indexOf(v)}">+ ${esc(v.t)}</button>`).join("")}</div>`:""}
         ${habEdit?`<div class="r1" style="margin:6px 0"><input class="tin" type="text" id="hn_${x.k}" maxlength="80" placeholder="Своя привычка"><button type="button" class="go ghost" data-hadd="${x.k}">+</button></div>`:""}`}).join("")}
@@ -963,18 +968,20 @@ function handleTodoEdit(b){const d=b.dataset;const t=L.todo.find(x=>x.id===(d.ts
 /* ---------- вкладка «Задачи» ---------- */
 let qDue=TODAY,qArea="self",qGoal="";
 function renderTasks(){const G=todoGroups(),doneR=L.todo.filter(t=>t.done&&t.done>=addD(TODAY,-7)).sort((a,b)=>a.done<b.done?1:-1);
-  let h=`<div class="day-h"><div><h1>Задачи</h1><small>${L.todo.filter(t=>!t.done).length} открытых · закрыто за неделю ${doneR.length}</small></div></div>
+  let h=`<div class="day-h"><div><h1>Задачи</h1><small>${L.todo.filter(t=>!t.done&&!(t.due&&t.due<=TODAY)).length} на будущее · закрыто за неделю ${doneR.length}</small></div></div>
   <section class="card"><form class="add-t" id="tadd"><div class="r1"><input class="tin" type="text" id="taT" maxlength="120" placeholder="Что нужно сделать" aria-label="Новая задача"><button type="submit" class="go">Добавить</button></div>
     <div class="chips">${[["Сегодня",TODAY],["Завтра",addD(TODAY,1)],["Через неделю",addD(TODAY,7)],["Когда-нибудь",""]].map(([n,v])=>`<button type="button" class="chip" data-qd="${v}" aria-pressed="${qDue===v}">${n}</button>`).join("")}<input class="tin" type="date" id="taD" value="${qDue}" style="width:auto;padding:5px 8px" aria-label="Дата"></div>
     <div class="chips">${TAREAS.map(a=>`<button type="button" class="chip" data-qa="${a.k}" aria-pressed="${qArea===a.k}">${a.n}</button>`).join("")}</div>
     ${activeGoals().length?`<select class="tin" id="taG" aria-label="Цель"><option value="">Без цели</option>${activeGoals().map(g=>`<option value="${g.id}"${g.id===qGoal?" selected":""}>${LV[g.lvl]}: ${esc(g.t)}</option>`).join("")}</select>`:""}</form></section>`;
-  const any=G.some(g=>g[2].length);
-  h+=`<section class="card">${any?G.filter(g=>g[2].length).map(([k,n,ts])=>`<div class="grp-t${k==="late"?" late":""}">${n} · ${ts.length}</div><div class="list">${ts.map(t=>todoRow(t,{noDate:k==="today",tab:"tasks"})).join("")}</div>`).join(""):`<p class="empty2">Открытых задач нет. Добавьте первую выше.</p>`}
+  const tn=L.todo.filter(t=>!t.done&&t.due&&t.due<=TODAY).length,G2=G.filter(g=>g[0]!=="late"&&g[0]!=="today"),any=G2.some(g=>g[2].length);
+  h+=`<button type="button" class="card moneymini" data-act="gotoday"><span><b style="font-size:17px;font-weight:600">${tn?"На сегодня "+tn+" "+plural(tn,"задача","задачи","задач"):"На сегодня задач нет"}</b><small style="display:block">${tn?"они на вкладке «Сегодня»":"новые на сегодня тоже можно добавить здесь"}</small></span><span class="note">Сегодня ›</span></button>
+  <section class="card">${any?G2.filter(g=>g[2].length).map(([k,n,ts])=>`<div class="grp-t${k==="late"?" late":""}">${n} · ${ts.length}</div><div class="list">${ts.map(t=>todoRow(t,{noDate:k==="today",tab:"tasks"})).join("")}</div>`).join(""):`<p class="empty2">Задач на будущее нет. Добавьте выше — на завтра, через неделю или «когда-нибудь».</p>`}
     ${doneR.length?`<details style="margin-top:12px"><summary class="note">Сделано за неделю: ${doneR.length}</summary><div class="list">${doneR.map(t=>todoRow(t,{tab:"tasks"})).join("")}</div></details>`:""}</section>`;
   $("t-tasks").innerHTML=h}
 $("t-tasks").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(d.qd!==undefined){qDue=d.qd;renderTasks();$("taT").focus();return}
   if(d.qa){qArea=d.qa;renderTasks();$("taT").focus();return}
+  if(d.act==="gotoday"){goTab("today");return}
   if(d.td){toggleTodo(d.td,b);return}if(d.tdo){tdOpen=tdOpen===d.tdo?null:d.tdo;renderTasks();return}handleTodoEdit(b)});
 $("t-tasks").addEventListener("change",e=>{if(e.target.id==="taD"){qDue=DR.test(e.target.value)?e.target.value:"";renderTasks()}if(e.target.id==="taG")qGoal=e.target.value});
 $("t-tasks").addEventListener("submit",e=>{e.preventDefault();const t=addTodo({t:$("taT").value,due:qDue,area:qArea,goal:$("taG")?$("taG").value:""});
@@ -1304,9 +1311,8 @@ const LTYPES=["лекция","конспект","статья","форум","к�
 let bkOpen=false,lnPr="pro",lnType="лекция",bkPr="pro";
 function devBlock(){const R=respect(),W=wheel(),mx=Math.max(1,...Object.values(W));
   const books=(L.books||[]).slice().sort((a,b)=>(!!a.done-!!b.done)||(a.t<b.t?-1:1)),learn=(L.learn||[]).slice().sort((a,b)=>a.dt<b.dt?1:-1),ppl=(L.ppl||[]).map(p=>({...p,due:p.last?Math.round((pd(TODAY)-pd(p.last))/864e5)-p.every:999})).sort((a,b)=>b.due-a.due);
-  return `<section class="card"><div class="ch"><h2>Принципы за неделю</h2><span>действий за 7 дней</span></div>
-    <div class="wheel">${AREAS.map(a=>`<div style="--c:var(${a.c})"><span>${a.n}</span><div class="gbar2"><i style="width:${(W[a.k]/mx*100).toFixed(1)}%"></i></div><b>${W[a.k]}</b></div>`).join("")}
-      <div style="--c:var(--yellow)"><span>Уважение к себе</span><div class="gbar2"><i style="width:${R.pct||0}%"></i></div><b>${R.pct==null?"—":R.pct+"%"}</b></div></div>
+  return `<section class="card"><div class="ch"><h2>Уважение к себе</h2><span>сдержанные обещания за 2 недели</span></div>
+    <div class="wheel"><div style="--c:var(--yellow)"><span>${R.pct==null?"пока мало данных":Math.round(R.k)+" из "+R.p+" обещаний"}</span><div class="gbar2"><i style="width:${R.pct||0}%"></i></div><b>${R.pct==null?"—":R.pct+"%"}</b></div></div>
     <p class="note" style="font-size:13px;margin-top:8px">Уважение к себе здесь — доля обещаний себе, которые вы сдержали за 2 недели: главное дело дня, привычки, дни без сигарет. Уверенность растёт из опыта «сказал себе — сделал», а сравнивать полезнее с собой прошлым, чем с другими.</p></section>
   <section class="card"><div class="ch"><h2>Книги</h2><span>${books.filter(b=>b.done).length} прочитано</span></div>
     <div class="list" style="margin-top:6px">${books.map(b=>{const a=AN(b.pr),p=b.tot?Math.min(1,b.pg/b.tot):0;return `<div class="goal${b.done?" done":""}" style="--c:var(${a.c})"><div class="gh"><span class="gt">${esc(b.t)}${b.au?`<small class="note" style="font-size:13px"> · ${esc(b.au)}</small>`:""}</span>${b.done?"":`<span class="step2"><button type="button" data-bkp="${b.id}" aria-label="Плюс 10 страниц">+10</button></span>`}<button type="button" class="x" data-bkx="${b.id}">×</button></div>
