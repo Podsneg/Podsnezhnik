@@ -299,6 +299,9 @@ select.tin{appearance:none;-webkit-appearance:none;background-image:linear-gradi
 .it.now .tx b{font-weight:600}
 .nowx{display:grid;gap:8px;padding:0 0 12px 38px}
 .nowx .btns{gap:6px}
+.phase .tt{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.02em}
+.phase .lbl{color:var(--accent)}
+.phase .gbar2{margin:2px 0 4px}
 
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .top .r{display:flex;gap:8px;align-items:center}
@@ -375,7 +378,7 @@ button,a,label,.chip,.ck,.it .tx{touch-action:manipulation}
       <input class="tin" type="text" id="ghRepo" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Закрытый репозиторий: podsnezhnik-data" autocorrect="off">
       <input class="tin" type="password" id="ghTok" autocomplete="off" spellcheck="false" placeholder="Токен доступа github_pat_…">
       <div class="btns"><button type="button" class="go" id="ghOn">Подключить</button><button type="button" class="go ghost" id="ghOff">Отключить</button></div>
-      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 16:59</p>
+      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 17:31</p>
     </div>
     <div class="ch" style="margin-top:14px"><h2>Резервная копия</h2></div>
     <div class="add-t">
@@ -679,7 +682,7 @@ const pd=s=>{const a=s.split("-");return new Date(+a[0],+a[1]-1,+a[2])};
 const addD=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return ds(d)};
 const wkStart=s=>addD(s,-((pd(s).getDay()||7)-1));
 const WK=wkStart(TODAY),YR=TODAY.slice(0,4);
-const nowSlot=()=>{const h=new Date().getHours();return h<12?"m":h<18?"d":"e"};
+const nowSlot=()=>{const n=new Date(),m=n.getHours()*60+n.getMinutes(),S=sch();return isWE(TODAY)?(m<12*60?"m":m<18*60?"d":"e"):m<tm(S.work)?"m":m<tm(S.end)?"d":"e"};
 const dayName=d=>d===TODAY?"Сегодня":d===addD(TODAY,1)?"Завтра":d===addD(TODAY,-1)?"Вчера":(pd(d).getDate()+" "+MG[pd(d).getMonth()]);
 const capF=s=>s?s[0].toUpperCase()+s.slice(1):s;
 
@@ -699,12 +702,13 @@ function cleanL(o){const l=freshL();if(!o||typeof o!=="object")return l;
   if(Array.isArray(o.books))l.books=o.books.filter(x=>x&&x.id&&x.t).map(x=>({id:String(x.id),t:String(x.t).slice(0,100),au:String(x.au||"").slice(0,60),pr:AREAS.some(a=>a.k===x.pr)?x.pr:"pro",tot:Math.max(1,Math.round(+x.tot||300)),pg:Math.max(0,Math.round(+x.pg||0)),done:DR.test(x.done||"")?x.done:""}));
   if(Array.isArray(o.learn))l.learn=o.learn.filter(x=>x&&x.id&&x.t&&DR.test(x.dt)).map(x=>({id:String(x.id),dt:x.dt,type:String(x.type||"лекция").slice(0,30),t:String(x.t).slice(0,120),pr:AREAS.some(a=>a.k===x.pr)?x.pr:"pro",note:String(x.note||"").slice(0,2000)}));
   if(Array.isArray(o.ppl))l.ppl=o.ppl.filter(x=>x&&x.id&&x.n).map(x=>({id:String(x.id),n:String(x.n).slice(0,60),role:String(x.role||"").slice(0,60),last:DR.test(x.last||"")?x.last:"",every:[30,60,90].includes(+x.every)?+x.every:60}));
+  if(o.sch&&typeof o.sch==="object"){l.sch={};for(const k of ["wake","leave","work","end","home","bed","goal"])if(/^\d\d:\d\d$/.test(o.sch[k]||""))l.sch[k]=o.sch[k];l.sch.from=DR.test(o.sch.from||"")?o.sch.from:""}
   if(typeof o.pin==="string")l.pin=o.pin;
   if(o.ch&&DR.test(o.ch.wk)&&o.ch.n>=3&&o.ch.n<=7)l.ch={wk:o.ch.wk,n:+o.ch.n};return l}
 function cleanYear(o){const r={};if(!o||!o.done||typeof o.done!=="object")return r;for(const k in o.done){const v=o.done[k];if(!/^\d\d-\d\d$/.test(k)||!v||typeof v!=="object")continue;r[k]=JSON.parse(JSON.stringify(v))}return r}
 const dirty=()=>{SC={}};
-function getDay(d){const v=(Y[d.slice(0,4)]||{})[d.slice(5)]||{};return{d:{...(v.d||{})},b:v.b||0,r:{...(v.r||{})},e:v.e||0,sl:v.sl||0,m:v.m||0,w:v.w||"",ls:v.ls||"",am:!!v.am,pm:!!v.pm,fx:v.fx||0,g3:Array.isArray(v.g3)?v.g3.slice(0,3):[],cg:v.cg||0,cr:v.cr||0,al:v.al||0,rs:v.rs||"",tg:{...(v.tg||{})}}}
-function setDay(d,o){const y=d.slice(0,4);Y[y]=Y[y]||{};const c={};if(Object.keys(o.d).length)c.d=o.d;["b","e","sl","m","fx","cg","cr","al"].forEach(k=>{if(o[k])c[k]=o[k]});if(o.rs)c.rs=o.rs;if(o.tg&&Object.keys(o.tg).length)c.tg=o.tg;if(o.g3&&o.g3.some(Boolean))c.g3=o.g3.map(x=>String(x||"").slice(0,200));["w","ls"].forEach(k=>{if(o[k])c[k]=o[k]});if(Object.keys(o.r||{}).length)c.r=o.r;if(o.am)c.am=1;if(o.pm)c.pm=1;
+function getDay(d){const v=(Y[d.slice(0,4)]||{})[d.slice(5)]||{};return{d:{...(v.d||{})},b:v.b||0,r:{...(v.r||{})},e:v.e||0,sl:v.sl||0,m:v.m||0,w:v.w||"",ls:v.ls||"",am:!!v.am,pm:!!v.pm,fx:v.fx||0,g3:Array.isArray(v.g3)?v.g3.slice(0,3):[],cg:v.cg||0,cr:v.cr||0,al:v.al||0,rs:v.rs||"",tg:{...(v.tg||{})},bt:v.bt||0,out:v.out&&v.out.t?{...v.out}:null}}
+function setDay(d,o){const y=d.slice(0,4);Y[y]=Y[y]||{};const c={};if(Object.keys(o.d).length)c.d=o.d;["b","e","sl","m","fx","cg","cr","al","bt"].forEach(k=>{if(o[k])c[k]=o[k]});if(o.out&&o.out.t)c.out={t:String(o.out.t).slice(0,100),at:String(o.out.at||"").slice(0,20),done:o.out.done?1:0};if(o.rs)c.rs=o.rs;if(o.tg&&Object.keys(o.tg).length)c.tg=o.tg;if(o.g3&&o.g3.some(Boolean))c.g3=o.g3.map(x=>String(x||"").slice(0,200));["w","ls"].forEach(k=>{if(o[k])c[k]=o[k]});if(Object.keys(o.r||{}).length)c.r=o.r;if(o.am)c.am=1;if(o.pm)c.pm=1;
   if(Object.keys(c).length)Y[y][d.slice(5)]=c;else delete Y[y][d.slice(5)];dirty();saveDoc("y"+y)}
 const habOn=d=>L.hab.filter(t=>t.from<=d&&(!t.to||d<=t.to));
 function dayStat(d){if(SC[d])return SC[d];const A=habOn(d),D=getDay(d);
@@ -712,7 +716,7 @@ function dayStat(d){if(SC[d])return SC[d];const A=habOn(d),D=getDay(d);
   const total=A.length,done=per.reduce((x,p)=>x+p.d,0),frac=per.reduce((x,p)=>x+p.f,0);let pts=0;A.forEach(t=>{const l=D.d[t.id]||0;pts+=l===2?10:l===1?5:0});
   const others=per.slice(1),balance=done>0&&(per[0].t===0||per[0].d>0)&&(others.some(p=>p.t>0)?others.some(p=>p.d>0):true)&&per.filter(p=>p.t>0).length>=2,perfect=total>0&&done===total;
   const tdn=L.todo.filter(t=>t.done===d).length;
-  return SC[d]={per,total,done,frac,balance,perfect,tdn,xp:pts+(balance?20:0)+(perfect?30:0)+(D.b||0)+tdn*10+(D.am?5:0)+(D.pm?10:0)+Math.floor((D.fx||0)/5)+(typeof FM!=="undefined"&&FM[d.slice(0,7)]&&FM[d.slice(0,7)].tx.some(t=>t.dt===d)?5:0)+(D.cr||0)*10+(L.smk&&L.smk.quit&&d>=L.smk.quit&&!D.cg&&(d<TODAY||D.pm)?10:0)+(L.learn||[]).filter(x=>x.dt===d).length*10,D}}
+  return SC[d]={per,total,done,frac,balance,perfect,tdn,xp:pts+(balance?20:0)+(perfect?30:0)+(D.b||0)+tdn*10+(D.am?5:0)+(D.pm?10:0)+Math.floor((D.fx||0)/5)+(typeof FM!=="undefined"&&FM[d.slice(0,7)]&&FM[d.slice(0,7)].tx.some(t=>t.dt===d)?5:0)+(D.cr||0)*10+(L.smk&&L.smk.quit&&d>=L.smk.quit&&!D.cg&&(d<TODAY||D.pm)?10:0)+(L.learn||[]).filter(x=>x.dt===d).length*10+(D.bt===1?10:0)+(D.out&&D.out.done?30:0),D}}
 function firstDay(){let f=TODAY;for(const y in Y)for(const k in Y[y]){const d=y+"-"+k;if(d<f)f=d}for(const t of L.todo)if(t.done&&t.done<f)f=t.done;return f}
 function totals(){const first=firstDay();let xp=0,bal=0,perf=0,run=0,best=0,since=99,pend=false,rest="",hd=0,diary=0;const pa=[0,0,0,0];let fxm=0;
   for(let d=first;d<=TODAY;d=addD(d,1)){const s=dayStat(d);xp+=s.xp;hd+=s.done;s.per.forEach((p,i)=>pa[i]+=p.d);if(s.perfect)perf++;if(s.D.pm||s.D.w)diary++;
@@ -733,7 +737,7 @@ const ECO="podsnezhnik.eco",GHK="podsnezhnik.gh",DTK="podsnezhnik.dirty",BSK="po
 let BASE={};try{BASE=JSON.parse(localStorage.getItem(BSK))||{}}catch(e){}
 function saveBase(){try{localStorage.setItem(BSK,JSON.stringify(BASE))}catch(e){}}
 const isO=x=>x&&typeof x==="object"&&!Array.isArray(x),eqJ=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-const keyOf=x=>isO(x)?(x.id!=null?"id:"+x.id:(x.tk!=null&&x.dt==null?"tk:"+x.tk:null)):null;
+const keyOf=x=>isO(x)?(x.id!=null?"id:"+x.id:x.k!=null?"k:"+x.k:(x.tk!=null&&x.dt==null?"tk:"+x.tk:null)):null;
 /* трёхстороннее слияние: правки с обоих устройств сохраняются; если одно и то же поле меняли оба — побеждает это устройство */
 function merge3(b,l,r){if(eqJ(l,r))return l;if(b!==undefined&&eqJ(l,b))return r;if(b!==undefined&&eqJ(r,b))return l;
   if(isO(l)&&isO(r)){const o={},bb=isO(b)?b:{};for(const k of new Set([...Object.keys(l),...Object.keys(r)])){const inL=k in l,inR=k in r,inB=k in bb;
@@ -861,10 +865,13 @@ function renderToday(){const D=getDay(TODAY),s=dayStat(TODAY),hr=new Date().getH
   let h=`<div class="day-h"><div><h1>${capF(WD[d.getDay()])}, ${d.getDate()} ${MG[d.getMonth()]}</h1><small id="dayS"></small></div></div>`;
   // новый старт
   if(isFresh()&&!(L.rev[WK]&&L.rev[WK].dt))h+=`<section class="card fresh"><b style="font-size:20px">${d.getDate()===1?"Новый месяц":"Новая неделя"} — чистый лист</b><p>Начало периода лучше всего подходит, чтобы оглянуться и выбрать главное. 5 минут.</p><div><button type="button" class="go" data-go="review">Обзор недели</button></div></section>`;
+  if(!L.sch){L.sch={...SCH0,from:TODAY};saveL()}
+  h+=phaseCard();
   // утро
   if(!D.am){const sug=[...L.todo.filter(t=>!t.done&&t.due&&t.due<=TODAY),...L.todo.filter(t=>!t.done&&!t.due)].slice(0,5),wg=activeGoals().filter(g=>g.lvl==="w");
     h+=`<section class="card morning" id="mrn"><div class="ch"><h2>${hr<12?"Доброе утро":"Настрой на день"}</h2><span>1 минута · +5</span></div>
       <div class="qrow"><span>Сколько спал</span><div class="chips">${[5,6,7,8,9].map(v=>`<button type="button" class="chip" data-sl="${v}" aria-pressed="${D.sl===v}">${v===5?"≤5":v===9?"9+":v} ч</button>`).join("")}</div></div>
+      ${isWE(TODAY)?"":`<div class="qrow"><span>Лёг вчера до ${bedTarget()}?</span><div class="chips"><button type="button" class="chip" data-bt="1" aria-pressed="${D.bt===1}">да · +10</button><button type="button" class="chip" data-bt="2" aria-pressed="${D.bt===2}">нет</button></div></div>`}
       <div class="qrow"><span>Энергия</span><div class="chips">${ENERGY.map(([v,n])=>`<button type="button" class="chip" data-en="${v}" aria-pressed="${D.e===v}">${n}</button>`).join("")}</div></div>
       <div class="qrow"><span>Одно дело, после которого день точно удался</span><input class="tin" type="text" id="top0" maxlength="120" placeholder="Самое важное на сегодня" aria-label="Главное дело">
         ${sug.length||wg.length?`<div class="chips">${sug.map(t=>`<button type="button" class="chip" data-pick="${t.id}">${esc(t.t)}</button>`).join("")}${wg.map(g=>`<button type="button" class="chip" data-pickg="${g.id}">шаг к «${esc(g.t)}»</button>`).join("")}</div>`:""}</div>
@@ -899,16 +906,8 @@ function renderToday(){const D=getDay(TODAY),s=dayStat(TODAY),hr=new Date().getH
         ${(habEdit||!ts.length)&&sug.length?`<div class="chips" style="margin:6px 0">${sug.map(v=>`<button type="button" class="chip" data-hsug="${x.k}|${x.sug.indexOf(v)}">+ ${esc(v.t)}</button>`).join("")}</div>`:""}
         ${habEdit?`<div class="r1" style="margin:6px 0"><input class="tin" type="text" id="hn_${x.k}" maxlength="80" placeholder="Своя привычка"><button type="button" class="go ghost" data-hadd="${x.k}">+</button></div>`:""}`}).join("")}
     ${["sport","work","family"].some(k=>A.filter(t=>t.area===k).length>3)?`<p class="warn2" style="margin-top:10px">Больше трёх привычек в сфере редко выдерживают дольше пары недель. Лучше меньше, но каждый день.</p>`:""}</section>`;
-  // финансы
-  {const R=finMonth(CUR),up=upcoming(3);
-   h+=`<section class="card"><button type="button" class="moneymini" data-go="fin"><span><span class="lbl">Финансы</span><br><b>${R.income?rub(Math.max(0,R.perDay-R.todaySp)):"Задайте доход"}</b></span><span class="chip" style="pointer-events:none">${R.income?"можно сегодня":"настроить"}</span>
-     <small>${up.length?up.map(r=>esc(r.n)+" "+rub(r.a)+(r.dd<0?" — просрочен":r.dd===0?" — сегодня":" через "+r.dd+" "+plural(r.dd,"день","дня","дней"))).join(" · "):R.income?"потрачено в этом месяце "+rub(R.spent-(R.recAll-R.recUnpaid)):"посчитаю, сколько можно тратить в день"}</small></button></section>`}
-  // инвестиции
-  const st=moState(CUR),due=divItems().filter(x=>x.state==="due");
-  h+=`<section class="card"><button type="button" class="moneymini" data-go="money"><span><span class="lbl">Инвестиции · снежный ком</span><br><b>${rub(capital())}</b></span><span class="chip" style="pointer-events:none">${st.n===3?"ритуал закрыт":"ритуал "+st.n+" из 3"}</span>
-    <small>${due.length?"к сбору дивиденды: "+rub(due.reduce((a,x)=>a+x.net,0)):MF[toI(CUR)%12]+": "+(st.n===3?"всё сделано":"осталось "+(3-st.n)+" "+plural(3-st.n,"шаг","шага","шагов"))}</small></button></section>`;
   // вечер
-  if(!D.pm&&(hr>=17||!nextAction()&&(D.am||s.done+s.tdn>0))){const weak=s.done+s.tdn===0;
+  if(!D.pm&&(["eve","bed"].includes(phase())||isWE(TODAY)&&hr>=17||!nextAction()&&(D.am||s.done+s.tdn>0))){const weak=s.done+s.tdn===0;
     h+=`<section class="card evening" id="eve"><div class="ch"><h2>Закрыть день</h2><span>2 минуты · +10</span></div>
       ${weak?`<div class="ctx soft">День вышел пустым — так бывает. Не ругайте себя: доброе отношение к себе после срыва помогает вернуться быстрее, чем самокритика. Завтра главное — не пропустить дважды.</div>`:""}
       <div class="qrow"><span>Как прошёл день</span><div class="mood">${MOOD.map(([v,n,c])=>`<button type="button" data-md="${v}" aria-pressed="${D.m===v}" style="--mc:${c}"><i></i>${n}</button>`).join("")}</div></div>
@@ -919,6 +918,7 @@ function renderToday(){const D=getDay(TODAY),s=dayStat(TODAY),hr=new Date().getH
       ${L.todo.some(t=>!t.done&&t.due===TODAY)?`<button type="button" class="go ghost wide" data-act="carry">Перенести несделанное на завтра</button>`:""}
       <button type="button" class="go lil wide" data-act="pm">Закрыть день</button></section>`}
   else if(D.pm)h+=`<section class="card"><div class="mini"><span>День закрыт · <b>${(MOOD.find(x=>x[0]===D.m)||["","—"])[1]}</b>${D.g3[0]?" · "+esc(D.g3[0]):""}</span><button type="button" class="lnk2" data-act="reopen">Изменить</button></div></section>`;
+  h+=schCard();
   $("t-today").innerHTML=h;
   $("dayS").textContent=[D.am?"сон "+(D.sl?(D.sl===9?"9+":D.sl===5?"≤5":D.sl)+" ч":"—")+", энергия "+((ENERGY.find(x=>x[0]===D.e)||["","—"])[1]):"",T.st?"серия баланса "+T.st+" "+plural(T.st,"день","дня","дней"):"",T.missY&&T.st?"вчера был пропуск":"",(()=>{const r=respect();return r.pct!=null?"обещания себе "+r.pct+"%":""})()].filter(Boolean).join(" · ")||"уровень "+lvlOf(T.xp);
   renderHead(T);navBadges();if(FT&&!FT.done)ftTick()}
@@ -1347,6 +1347,95 @@ $("t-goals").addEventListener("click",e=>{const b=e.target.closest("button");if(
   if(d.pp==="add"){const n=$("ppN").value.trim();if(!n){$("ppN").focus();return}const ev=+(b.closest(".add-t").querySelector('[data-ppe][aria-pressed="true"]')||{dataset:{ppe:60}}).dataset.ppe;L.ppl=L.ppl||[];L.ppl.push({id:rid(),n:n.slice(0,60),role:$("ppR").value.trim().slice(0,60),last:"",every:ev});saveL();renderGoals();return}
   if(d.pp){const p=L.ppl.find(x=>x.id===d.pp);if(!p)return;withXp(()=>{p.last=TODAY;L.learn=L.learn||[];L.learn.push({id:rid(),dt:TODAY,type:"контакт",t:p.n,pr:"pro",note:""});saveL()},b,css("--pro"),"Связь поддержана, +10",0);renderAll();renderGoals();return}
   if(d.ppx){if(!sure(b,"удалить?"))return;L.ppl=L.ppl.filter(x=>x.id!==d.ppx);saveL();renderGoals();return}},true);
+
+/* ===== режим дня: экран «Сегодня» подстраивается под распорядок ===== */
+const SCH0={wake:"06:00",leave:"07:30",work:"09:00",end:"18:30",home:"20:00",bed:"00:00",goal:"23:00",from:""};
+const SCHN={wake:"Подъём",leave:"Выход из дома",work:"Начало работы",end:"Конец работы",home:"Дома",bed:"Отбой сейчас",goal:"Цель отбоя"};
+const sch=()=>({...SCH0,...(L.sch||{})});
+const tm=s=>{const[a,b]=String(s||"0:0").split(":").map(Number);return(a||0)*60+(b||0)};
+const hhmm=m=>{m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")};
+const isWE=d=>{const w=pd(d).getDay();return w===0||w===6};
+const late=m=>m<12*60?m+1440:m;
+/* отбой сдвигается на 15 минут каждую неделю, пока не дойдёт до цели */
+function bedTarget(){const S=sch(),b=late(tm(S.bed)),g=late(tm(S.goal));if(!S.from)return hhmm(b);
+  const wk=Math.max(0,Math.floor((pd(TODAY)-pd(S.from))/6048e5));return hhmm(Math.max(g,b-15*(wk+1)))}
+const nowMin=()=>{const n=new Date();return n.getHours()*60+n.getMinutes()};
+function phase(){const S=sch(),m=nowMin(),bt=late(tm(bedTarget()));
+  if(m<5*60||(m>=12*60&&m>=bt-30))return"bed";
+  if(isWE(TODAY))return"we";
+  if(m<tm(S.leave))return"am";if(m<tm(S.work))return"go";if(m<tm(S.end))return"work";if(m<tm(S.home))return"back";return"eve"}
+const dur=m=>{m=Math.max(0,Math.round(m));const h=Math.floor(m/60),mm=m%60;return(h?h+" ч ":"")+(mm||!h?mm+" мин":"")};
+/* книга в дорогу: по дням недели чередуем принципы */
+const ROT={1:"pro",2:"money",3:"mind",4:"pro",5:"money"};
+function roadBook(){const bs=(L.books||[]).filter(b=>!b.done);if(!bs.length)return null;const want=ROT[pd(TODAY).getDay()];return bs.find(b=>b.pr===want)||bs[0]}
+const OUT={sport:["Спортзал","Бассейн","Пробежка в парке","Велосипед","Скалодром"],nature:["Прогулка в лесу или парке","Выезд за город","Геологический маршрут: карьер, обнажение, берег","Поход на весь день"],people:["Встреча с друзьями","Позвать кого-то на прогулку","Мероприятие или лекция","Профессиональная встреча"]};
+const OUTN={sport:"Спорт",nature:"Природа",people:"Люди"};
+let outCat="nature",schOpen=false,bkQuick=false;
+function weStreak(){let n=0,d=TODAY;const sat=s=>{const w=pd(s).getDay();return addD(s,w===0?-1:6-w)};
+  let s=sat(TODAY);if(s>TODAY)s=addD(s,-7);
+  const done=x=>[x,addD(x,1)].some(z=>{const D=getDay(z);return D.out&&D.out.done});
+  if(!done(s)&&TODAY<=addD(s,1))s=addD(s,-7);
+  while(done(s)){n++;s=addD(s,-7)}return n}
+function phaseCard(){const S=sch(),p=phase(),m=nowMin(),D=getDay(TODAY),bt=bedTarget();
+  const head=(lbl,t,sub)=>`<div class="lbl">${lbl}</div><div class="tt">${t}</div>${sub?`<p class="note">${sub}</p>`:""}`;
+  let h="";
+  if(p==="am")h=head("Утро","До выхода "+dur(tm(S.leave)-m),"Выход в "+S.leave+". Телефон — после того, как оделся.");
+  else if(p==="go"||p==="back"){const bk=roadBook(),hab=L.hab.find(t=>/трениров/i.test(t.t));
+    h=head(p==="go"?"Дорога на работу":"Дорога домой","Полтора часа — твоё время",p==="back"?(hab?"Дома сразу «"+esc(hab.t)+"», пока не сел на диван.":"Дома сразу 10 минут тренировки, пока не сел на диван."):"Лучшее время для книги или лекции с конспектом.");
+    if(bk){const a=AN(bk.pr);h+=`<div class="it" style="--c:var(${a.c});border:0;padding-bottom:0"><div class="tx"><b>${esc(bk.t)}</b><small>${a.n} · ${bk.pg} из ${bk.tot} стр.</small></div></div><div class="gbar2" style="--c:var(${a.c})"><i style="width:${(bk.pg/bk.tot*100).toFixed(1)}%"></i></div>
+      <div class="btns"><button type="button" class="go" data-rp="${bk.id}|10">+10 стр.</button><button type="button" class="go ghost" data-rp="${bk.id}|25">+25 стр.</button><button type="button" class="lnk2" data-act="lecture">Лекция с конспектом</button></div>`}
+    else h+=bkQuick?`<div class="r1"><input class="tin" type="text" id="rbT" maxlength="100" placeholder="Что читаешь: название книги"><button type="button" class="go" data-act="rbadd">Добавить</button></div><div class="chips">${["pro","money","mind"].map(k=>`<button type="button" class="chip" data-rbpr="${k}" aria-pressed="${bkPr===k}">${AN(k).n}</button>`).join("")}</div>`
+      :`<div class="btns"><button type="button" class="go" data-act="rbopen">Добавить книгу в дорогу</button><button type="button" class="lnk2" data-act="lecture">Лекция с конспектом</button></div>`}
+  else if(p==="work"){const pp=(L.ppl||[]).map(x=>({...x,due:x.last?Math.round((pd(TODAY)-pd(x.last))/864e5)-x.every:999})).filter(x=>x.due>=0).sort((a,b)=>b.due-a.due)[0];
+    const did=(L.learn||[]).some(x=>x.dt===TODAY&&x.type==="инициатива на работе");
+    h=head("Работа","До конца дня "+dur(tm(S.end)-m),did?"Инициатива сегодня уже есть. Отлично.":"Одно дело сверх задачи — и коллеги это заметят.");
+    if(!did)h+=`<div class="r1"><input class="tin" type="text" id="iwT" maxlength="120" placeholder="Что предложил или сделал сверх задачи"><button type="button" class="go" data-act="iwadd">+10</button></div>`;
+    if(pp)h+=`<div class="it" style="--c:var(--pro);border:0;padding:6px 0 0"><div class="tx"><b>Напиши: ${esc(pp.n)}</b><small>${esc(pp.role||"")}${pp.last?" · давно не общались":" · ещё не общались"}</small></div><button type="button" class="go ghost" data-pp="${pp.id}">Связался</button></div>`}
+  else if(p==="eve"){const hab=L.hab.find(t=>/трениров/i.test(t.t)),done=hab&&D.d[hab.id];
+    h=head("Вечер","До отбоя "+dur(late(tm(bt))-late(m)),"Отбой сегодня в "+bt+(S.from&&bt!==S.goal?". Каждую неделю на 15 минут раньше, цель — "+S.goal:"")+".");
+    if(!hab)h+=`<div class="btns"><button type="button" class="go" data-act="addwork">Добавить привычку «Тренировка дома»</button></div>`;
+    else if(done)h+=`<p class="note">✓ ${esc(hab.t)} — сделано</p>`;
+    else h+=`<div class="btns"><button type="button" class="go" data-hb2="${hab.id}">Тренировка сделана</button><button type="button" class="go ghost" data-hb1="${hab.id}">Минимум: ${esc(hab.min||"10 минут")}</button></div>`}
+  else if(p==="bed"){const past=late(m)>late(tm(bt));
+    h=head("Отбой",past?"Уже позже "+bt+" — пора спать":"Отбой в "+bt,(m<5*60?(isWE(TODAY)?"":"Подъём в "+S.wake+". "):(past&&!isWE(addD(TODAY,1))?"Завтра подъём в "+S.wake+". ":""))+"Телефон на зарядку подальше от кровати: экран перед сном мешает заснуть.")}
+  else if(p==="we"){const o=D.out,st=weStreak();
+    if(o&&o.done)h=head("Выходной","Выбрался из дома ✓",esc(o.t)+(st?" · выходных подряд: "+st:""));
+    else if(o&&o.t)h=head("Выходной · план",esc(o.t),(o.at?esc(o.at)+". ":"")+"Решение уже принято — осталось выйти.")+`<div class="btns"><button type="button" class="go" data-act="outdone">Сделал · +30</button><button type="button" class="lnk2" data-act="outre">Поменять</button></div>`;
+    else{h=head("Выходной","Куда выберешься сегодня?","Одно дело вне дома"+(st?" · выходных подряд: "+st:"")+". Домоседство побеждается планом с утра, а не настроением к вечеру.")
+      +`<div class="chips">${Object.keys(OUT).map(k=>`<button type="button" class="chip" data-oc="${k}" aria-pressed="${outCat===k}">${OUTN[k]}</button>`).join("")}</div>
+      <div class="chips">${OUT[outCat].map(v=>`<button type="button" class="chip" data-ov="${esc(v)}">${esc(v)}</button>`).join("")}</div>
+      <input class="tin" type="text" id="ouT" maxlength="100" placeholder="Или своё: куда и с кем">
+      <div class="chips">${["утром","днём","вечером"].map(v=>`<button type="button" class="chip" data-oat="${v}" aria-pressed="false">${v}</button>`).join("")}</div>
+      <button type="button" class="go wide" data-act="outset">Решено</button>`}}
+  return `<section class="card phase now2">${h}</section>`}
+function schCard(){const S=sch();
+  return `<section class="card"><button type="button" class="moneymini" data-act="schopen"><span><b style="font-size:17px;font-weight:600">Мой режим дня</b><small style="display:block">подъём ${S.wake} · выход ${S.leave} · работа ${S.work}–${S.end} · отбой ${bedTarget()}</small></span><span class="note">${schOpen?"Скрыть":"Изменить"}</span></button>
+    ${schOpen?`<div class="add-t" style="margin-top:10px">${Object.keys(SCHN).map(k=>`<label class="qrow" for="sc_${k}"><span>${SCHN[k]}</span><input class="tin" type="time" id="sc_${k}" value="${S[k]}"></label>`).join("")}
+      <label class="qrow"><span><input type="checkbox" id="sc_shift"${S.from?" checked":""}> Сдвигать отбой на 15 минут раньше каждую неделю, пока не дойдёт до цели</span></label>
+      <button type="button" class="go" data-act="schsave">Сохранить</button></div>`:""}</section>`}
+/* обработчики */
+$("t-today").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+  if(d.rp){e.stopPropagation();const[id,n]=d.rp.split("|"),bk=(L.books||[]).find(x=>x.id===id);if(!bk)return;bk.pg=Math.min(bk.tot,bk.pg+ +n);
+    if(bk.pg>=bk.tot){withXp(()=>{bk.done=TODAY;L.bon.push({k:"b:"+bk.id,pts:100,dt:TODAY});saveL()},b,css(AN(bk.pr).c),"Книга прочитана: «"+bk.t+"», +100",2)}else{saveL();party(b,0,css(AN(bk.pr).c),bk.pg+" из "+bk.tot+" стр.")}renderToday();return}
+  if(d.act==="lecture"){e.stopPropagation();goTab("goals");setTimeout(()=>{const x=$("lnT");if(x){x.scrollIntoView({behavior:"smooth",block:"center"});x.focus()}},150);return}
+  if(d.act==="rbopen"){e.stopPropagation();bkQuick=true;renderToday();setTimeout(()=>$("rbT")&&$("rbT").focus(),0);return}
+  if(d.rbpr){e.stopPropagation();bkPr=d.rbpr;b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));return}
+  if(d.act==="rbadd"){e.stopPropagation();const t=$("rbT").value.trim();if(!t){$("rbT").focus();return}L.books=L.books||[];L.books.push({id:rid(),t:t.slice(0,100),au:"",pr:bkPr,tot:300,pg:0,done:""});bkQuick=false;saveL();renderToday();toast("Книга в дорогу добавлена. Страниц по умолчанию 300 — поправьте в «Целях»");return}
+  if(d.act==="iwadd"){e.stopPropagation();const t=$("iwT").value.trim();if(!t){$("iwT").focus();return}withXp(()=>{L.learn=L.learn||[];L.learn.push({id:rid(),dt:TODAY,type:"инициатива на работе",t:t.slice(0,120),pr:"pro",note:""});saveL()},b,css("--pro"),"Инициатива записана, +10",1);renderToday();return}
+  if(d.act==="addwork"){e.stopPropagation();addHab("health",{t:"Тренировка дома",min:"10 минут",cue:"сразу после дороги домой",slot:"e"});toast("Привычка добавлена. Минимум — 10 минут");return}
+  if(d.hb2||d.hb1){e.stopPropagation();const id=d.hb2||d.hb1,t=L.hab.find(x=>x.id===id);if(!t)return;withXp(()=>{const D=getDay(TODAY);D.d[id]=d.hb2?2:1;setDay(TODAY,D)},b,css("--health"),d.hb2?"Тренировка засчитана":"Минимум засчитан — это тоже победа",1);renderToday();return}
+  if(d.oc){e.stopPropagation();outCat=d.oc;renderToday();return}
+  if(d.ov){e.stopPropagation();$("ouT").value=d.ov;return}
+  if(d.oat){e.stopPropagation();b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));return}
+  if(d.act==="outset"){e.stopPropagation();const t=$("ouT").value.trim();if(!t){$("ouT").focus();toast("Выберите или впишите, куда выберетесь");return}const at=b.closest(".phase").querySelector("[data-oat][aria-pressed=true]");
+    const D=getDay(TODAY);D.out={t:t.slice(0,100),at:at?at.dataset.oat:"",done:0};setDay(TODAY,D);party(b,0,null,"План есть. Осталось выйти");renderToday();return}
+  if(d.act==="outdone"){e.stopPropagation();withXp(()=>{const D=getDay(TODAY);D.out.done=1;setDay(TODAY,D)},b,css("--accent"),"Выбрался из дома, +30",2);renderToday();return}
+  if(d.act==="outre"){e.stopPropagation();const D=getDay(TODAY);D.out=null;setDay(TODAY,D);renderToday();return}
+  if(d.bt){e.stopPropagation();const D=getDay(TODAY);D.bt=+d.bt;setDay(TODAY,D);b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderHead();return}
+  if(d.pp){e.stopPropagation();const p=(L.ppl||[]).find(x=>x.id===d.pp);if(!p)return;withXp(()=>{p.last=TODAY;L.learn=L.learn||[];L.learn.push({id:rid(),dt:TODAY,type:"контакт",t:p.n,pr:"pro",note:""});saveL()},b,css("--pro"),"Связь поддержана, +10",0);renderToday();return}
+  if(d.act==="schopen"){e.stopPropagation();schOpen=!schOpen;renderToday();return}
+  if(d.act==="schsave"){e.stopPropagation();const n={};for(const k in SCHN){const v=$("sc_"+k).value;if(/^\d\d:\d\d$/.test(v))n[k]=v}const old=sch();n.from=$("sc_shift").checked?(old.from||TODAY):"";L.sch={...old,...n};schOpen=false;saveL();renderToday();toast("Режим сохранён");return}
+},true);
 
 /* ===== запуск ===== */
 $("ptsBtn").onclick=()=>goTab("goals");
