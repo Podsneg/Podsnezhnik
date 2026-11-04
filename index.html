@@ -1382,7 +1382,7 @@ async function refreshDivs(){const tks=[...new Set(S.pf.filter(x=>x.q>0).map(x=>
         if(!DR.test(rd)||!(v>0)||rd<fromS)continue;if(r.currencyid&&!/^(SUR|RUB)$/.test(r.currencyid))continue;
         const old=(DC.items||[]).find(x=>x.tk===tk&&x.rd===rd);items.push({tk,rd,buy:wdAdd(rd,-1),pay:wdAdd(rd,25),dps:v,st:old?old.st:""})}}));
     DC=cleanDC({upd:TODAY,items});localSave();renderMoney();renderAll()}catch(e){}}
-document.addEventListener("click",e=>{const b=e.target.closest('button[data-act="iss"]');if(b){e.stopPropagation();refreshPrices(true,b)}},true);
+document.addEventListener("click",e=>{const b=e.target.closest('button[data-act="iss"]');if(b){e.stopPropagation();refreshPrices(true,b);refreshDivs()}},true);
 function autoPx(){let at=0;try{at=+localStorage.getItem(PXK)||0}catch(e){}if(Date.now()-at>30*60e3){refreshPrices(false);refreshDivs()}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){sync(true);autoPx()}});
 setSave(GH?"Синхронизирую…":"На этом устройстве");
