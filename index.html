@@ -375,7 +375,7 @@ button,a,label,.chip,.ck,.it .tx{touch-action:manipulation}
       <input class="tin" type="text" id="ghRepo" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Закрытый репозиторий: podsnezhnik-data" autocorrect="off">
       <input class="tin" type="password" id="ghTok" autocomplete="off" spellcheck="false" placeholder="Токен доступа github_pat_…">
       <div class="btns"><button type="button" class="go" id="ghOn">Подключить</button><button type="button" class="go ghost" id="ghOff">Отключить</button></div>
-      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 16:57</p>
+      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 16:59</p>
     </div>
     <div class="ch" style="margin-top:14px"><h2>Резервная копия</h2></div>
     <div class="add-t">
@@ -1050,7 +1050,7 @@ function renderGoals(){const T=totals();
     <li><b>Приятное в пару с привычкой.</b> Если любимый подкаст слушать только на тренировке, ходят чаще. <cite>Milkman и соавт., 2014</cite></li>
     <li><b>Фокус 25 минут.</b> Одна задача без переключений и короткий перерыв после. Переключение между задачами заметно снижает продуктивность.</li>
     <li><b>Одно дело в блоке «Сейчас» и маленькие победы.</b> Ощущение прогресса в значимой работе — один из сильнейших источников мотивации на работе. <cite>Amabile, Kramer, 2011</cite></li>
-    <li><b>Отказ от курения по шагам.</b> Дата отказа, учёт триггеров и план «если тянет — то…», а в моменты тяги — переждать волну. Лекарственная поддержка от врача вместе с таким планом заметно повышает шансы бросить. <cite>ВОЗ, клинические рекомендации по лечению табачной зависимости</cite></li>
+    <li><b>Отказ от курения по шагам.</b> Дата отказа, учёт триггеров и план «если тянет — то…», а в моменты тяги — переждать волну. <cite>ВОЗ, клинические рекомендации по лечению табачной зависимости</cite></li>
     <li><b>Уважение к себе через сдержанные обещания.</b> Уверенность в себе растёт прежде всего из собственного опыта успеха, поэтому приложение считает, какую долю обещаний себе вы выполнили. <cite>Bandura, теория самоэффективности</cite></li>
     <li><b>Конспект своими словами.</b> Пересказ и попытка вспомнить материал запоминаются лучше, чем повторное чтение. <cite>Roediger, Karpicke, 2006</cite></li>
     <li><b>Очки и награды</b> — обратная связь, а не смысл. Главное — ваше «зачем» в целях; очки лишь помогают его видеть.</li></ul></details>`;
@@ -1258,7 +1258,7 @@ function smoke(){const k=L.smk;if(!k||!k.quit)return null;const before=TODAY<k.q
 function trigWeek(){const c={};for(let i=0;i<7;i++){const D=getDay(addD(TODAY,-i));for(const t in (D.tg||{}))c[t]=(c[t]||0)+D.tg[t]}return Object.entries(c).sort((a,b)=>b[1]-a[1])}
 function smokeCard(){const k=L.smk,D=getDay(TODAY);
   if(!k){if(smkLater)return"";return `<section class="card smk" style="--c:var(--health)"><div class="ch"><h2>Бросить курить</h2><span>Здоровье</span></div>
-    <p class="note">${skKind==="stick"?"Стики — та же никотиновая зависимость, а отдалённый вред нагреваемого табака пока изучен мало, так что отказ от них того стоит. ":""}Лучше всего работает сочетание трёх вещей: дата отказа в ближайшие 1–2 недели, план на ситуации, где тянет, и поддержка. Никотинозаместительная терапия или препараты от врача заметно повышают шансы — это стоит обсудить с терапевтом.</p>
+    <p class="note">${skKind==="stick"?"Стики — та же никотиновая зависимость, а отдалённый вред нагреваемого табака пока изучен мало, так что отказ от них того стоит. ":""}Выберите день, с которого больше не курите, и заранее решите, что будете делать в ситуациях, где обычно тянет.</p>
     <div class="r"><div class="chips" style="grid-column:1/-1">${[["stick","Стики"],["cig","Сигареты"]].map(([k,n])=>`<button type="button" class="chip" data-skk="${k}" aria-pressed="${skKind===k}">${n}</button>`).join("")}</div><label class="fld" for="skCpd">${skKind==="cig"?"Сигарет":"Стиков"} в день сейчас<input type="number" id="skCpd" inputmode="numeric" min="1" max="80" step="1"></label><label class="fld" for="skPr">Цена пачки, ₽<input type="number" id="skPr" inputmode="numeric" min="0" step="10"></label></div>
     <div class="qrow"><span>День отказа</span><div class="chips">${[[7,"через неделю"],[14,"через 2 недели"],[0,"сегодня"]].map(([n,t])=>`<button type="button" class="chip" data-skq="${addD(TODAY,n)}" aria-pressed="${n===7}">${t}</button>`).join("")}</div><input class="tin" type="date" id="skQ" value="${addD(TODAY,7)}" min="${TODAY}" aria-label="Дата отказа"></div>
     <div class="btns"><button type="button" class="go" data-sk="setup">Составить план</button><button type="button" class="lnk2" data-sk="later">Позже</button></div></section>`}
