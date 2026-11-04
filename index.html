@@ -378,7 +378,7 @@ button,a,label,.chip,.ck,.it .tx{touch-action:manipulation}
       <input class="tin" type="text" id="ghRepo" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Закрытый репозиторий: podsnezhnik-data" autocorrect="off">
       <input class="tin" type="password" id="ghTok" autocomplete="off" spellcheck="false" placeholder="Токен доступа github_pat_…">
       <div class="btns"><button type="button" class="go" id="ghOn">Подключить</button><button type="button" class="go ghost" id="ghOff">Отключить</button></div>
-      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 17:46</p>
+      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 17:47</p>
     </div>
     <div class="ch" style="margin-top:14px"><h2>Резервная копия</h2></div>
     <div class="add-t">
@@ -1386,7 +1386,7 @@ function weStreak(){let n=0,d=TODAY;const sat=s=>{const w=pd(s).getDay();return 
 function phaseCard(){const S=sch(),p=phase(),m=nowMin(),D=getDay(TODAY),bt=bedTarget();let gn="";
   const head=(lbl,t,sub)=>`<div class="lbl">${lbl}</div><div class="tt">${t}</div>${sub?`<p class="note">${sub}</p>`:""}`;
   let h="";
-  if(p==="gym")h=head("Зал · утренняя тренировка",m<tm(S.gw)?"Подъём в "+S.gw:"Сумка, вода — и вперёд","Выход на работу в "+S.leave+". Душ после тренировки.")+`<div class="btns"><button type="button" class="go" data-act="gymdone">Тренировка сделана · +30</button><button type="button" class="lnk2" data-act="gymskip">Сегодня не получилось</button></div>`;
+  if(p==="gym")h=head("Площадка · утренняя тренировка",m<tm(S.gw)?"Подъём в "+S.gw:"Оделся по погоде — и на площадку","Выход на работу в "+S.leave+". Разминка дольше обычного: утром и на холоде мышцы холодные.")+`<div class="btns"><button type="button" class="go" data-act="gymdone">Тренировка сделана · +30</button><button type="button" class="lnk2" data-act="gymskip">Сегодня не получилось</button></div>`;
   else if(p==="am")h=head("Утро","До выхода "+dur(tm(S.leave)-m),"Выход в "+S.leave+". Телефон — после того, как оделся.");
   else if(p==="go"||p==="back"){const bk=roadBook(),hab=L.hab.find(t=>/трениров/i.test(t.t));
     h=head(p==="go"?"Дорога на работу":"Дорога домой","Полтора часа — твоё время",p==="back"?(hab?"Дома сразу «"+esc(hab.t)+"», пока не сел на диван.":"Дома сразу 10 минут тренировки, пока не сел на диван."):"Лучшее время для книги или лекции с конспектом.");
@@ -1401,16 +1401,16 @@ function phaseCard(){const S=sch(),p=phase(),m=nowMin(),D=getDay(TODAY),bt=bedTa
     if(pp)h+=`<div class="it" style="--c:var(--pro);border:0;padding:6px 0 0"><div class="tx"><b>Напиши: ${esc(pp.n)}</b><small>${esc(pp.role||"")}${pp.last?" · давно не общались":" · ещё не общались"}</small></div><button type="button" class="go ghost" data-pp="${pp.id}">Связался</button></div>`}
   else if(p==="eve"){const hab=L.hab.find(t=>/трениров/i.test(t.t)),done=hab&&D.d[hab.id];
     const gt=isGym(addD(TODAY,1));
-    h=head("Вечер","До отбоя "+dur(late(tm(bt))-late(m)),gt?"Завтра зал: подъём в "+S.gw+", поэтому отбой в "+bt+". Соберите сумку сейчас — утром будет на одно решение меньше.":"Отбой сегодня в "+bt+(S.from&&bt!==S.goal?". Каждую неделю на 15 минут раньше, цель — "+S.goal:"")+".");
+    h=head("Вечер","До отбоя "+dur(late(tm(bt))-late(m)),gt?"Завтра площадка: подъём в "+S.gw+", поэтому отбой в "+bt+". Приготовьте форму с вечера: на улице темно и холодно, утром будет на одно решение меньше.":"Отбой сегодня в "+bt+(S.from&&bt!==S.goal?". Каждую неделю на 15 минут раньше, цель — "+S.goal:"")+".");
     if(gt){h+=`<p class="note" style="font-size:13px">Тренировок на этой неделе: ${gymWeek()}</p>`}else{
-    if(D.gym===1)h+=`<p class="note">✓ Утром был зал — сегодня тренировка уже есть</p>`;
+    if(D.gym===1)h+=`<p class="note">✓ Утром была площадка — тренировка сегодня уже есть</p>`;
     else if(!hab)h+=`<div class="btns"><button type="button" class="go" data-act="addwork">Добавить привычку «Тренировка дома»</button></div>`;
     else if(done)h+=`<p class="note">✓ ${esc(hab.t)} — сделано</p>`;
     else h+=`<div class="btns"><button type="button" class="go" data-hb2="${hab.id}">Тренировка сделана</button><button type="button" class="go ghost" data-hb1="${hab.id}">Минимум: ${esc(hab.min||"10 минут")}</button></div>`}}
   else if(p==="bed"){const past=late(m)>late(tm(bt));
     const nd=addD(nightDay(),1),gt=isGym(nd),wk=gt?S.gw:S.wake,when=m<4*60?"":"Завтра ";
-    h=head("Отбой",past?"Уже позже "+bt+" — пора спать":"Отбой в "+bt,(gt?(when||"Сегодня ")+"зал, подъём в "+wk+". ":!isWE(nd)&&(past||m<4*60)?(when?"Завтра подъём":"Подъём")+" в "+wk+". ":"")+"Телефон на зарядку подальше от кровати: экран перед сном мешает заснуть.")}
-  else if(p==="we"){const o=D.out,st=weStreak();gn=isGym(addD(TODAY,1))&&m>=17*60?`<p class="note" style="font-size:13px">Завтра зал: подъём в ${S.gw}, отбой сегодня в ${bt}. Сумку лучше собрать заранее.</p>`:"";
+    h=head("Отбой",past?"Уже позже "+bt+" — пора спать":"Отбой в "+bt,(gt?(when||"Сегодня ")+"площадка, подъём в "+wk+". ":!isWE(nd)&&(past||m<4*60)?(when?"Завтра подъём":"Подъём")+" в "+wk+". ":"")+"Телефон на зарядку подальше от кровати: экран перед сном мешает заснуть.")}
+  else if(p==="we"){const o=D.out,st=weStreak();gn=isGym(addD(TODAY,1))&&m>=17*60?`<p class="note" style="font-size:13px">Завтра площадка: подъём в ${S.gw}, отбой сегодня в ${bt}. Форму лучше приготовить с вечера.</p>`:"";
     if(o&&o.done)h=head("Выходной","Выбрался из дома ✓",esc(o.t)+(st?" · выходных подряд: "+st:""));
     else if(o&&o.t)h=head("Выходной · план",esc(o.t),(o.at?esc(o.at)+". ":"")+"Решение уже принято — осталось выйти.")+`<div class="btns"><button type="button" class="go" data-act="outdone">Сделал · +30</button><button type="button" class="lnk2" data-act="outre">Поменять</button></div>`;
     else{h=head("Выходной","Куда выберешься сегодня?","Одно дело вне дома"+(st?" · выходных подряд: "+st:"")+". Домоседство побеждается планом с утра, а не настроением к вечеру.")
@@ -1422,13 +1422,13 @@ function phaseCard(){const S=sch(),p=phase(),m=nowMin(),D=getDay(TODAY),bt=bedTa
   if(p==="we")h+=gn;
   return `<section class="card phase now2">${h}</section>`}
 function schCard(){const S=sch();
-  return `<section class="card"><button type="button" class="moneymini" data-act="schopen"><span><b style="font-size:17px;font-weight:600">Мой режим дня</b><small style="display:block">подъём ${S.wake} · выход ${S.leave} · работа ${S.work}–${S.end} · отбой ${bedTarget()}<br>зал: ${String(S.gd||"").split("").map(x=>WDS[+x]).join(", ")||"—"} в ${S.gw}${S.gf>TODAY?" с "+fmtD(S.gf):""}</small></span><span class="note">${schOpen?"Скрыть":"Изменить"}</span></button>
+  return `<section class="card"><button type="button" class="moneymini" data-act="schopen"><span><b style="font-size:17px;font-weight:600">Мой режим дня</b><small style="display:block">подъём ${S.wake} · выход ${S.leave} · работа ${S.work}–${S.end} · отбой ${bedTarget()}<br>площадка: ${String(S.gd||"").split("").map(x=>WDS[+x]).join(", ")||"—"} в ${S.gw}${S.gf>TODAY?" с "+fmtD(S.gf):""}</small></span><span class="note">${schOpen?"Скрыть":"Изменить"}</span></button>
     ${schOpen?`<div class="add-t" style="margin-top:10px">${Object.keys(SCHN).map(k=>`<label class="qrow" for="sc_${k}"><span>${SCHN[k]}</span><input class="tin" type="time" id="sc_${k}" value="${S[k]}"></label>`).join("")}
       <label class="qrow"><span><input type="checkbox" id="sc_shift"${S.from?" checked":""}> Сдвигать отбой на 15 минут раньше каждую неделю, пока не дойдёт до цели</span></label>
-      <div class="qrow"><span>Дни зала</span><div class="chips">${[1,2,3,4,5,6,0].map(x=>`<button type="button" class="chip" data-gd="${x}" aria-pressed="${String(S.gd||"").includes(String(x))}">${WDS[x]}</button>`).join("")}</div></div>
-      <label class="qrow" for="sc_gw"><span>Подъём в дни зала</span><input class="tin" type="time" id="sc_gw" value="${S.gw}"></label>
-      <label class="qrow" for="sc_gb"><span>Отбой накануне зала</span><input class="tin" type="time" id="sc_gb" value="${S.gb}"></label>
-      <label class="qrow" for="sc_gf"><span>Зал по графику с</span><input class="tin" type="date" id="sc_gf" value="${S.gf}"></label>
+      <div class="qrow"><span>Дни площадки</span><div class="chips">${[1,2,3,4,5,6,0].map(x=>`<button type="button" class="chip" data-gd="${x}" aria-pressed="${String(S.gd||"").includes(String(x))}">${WDS[x]}</button>`).join("")}</div></div>
+      <label class="qrow" for="sc_gw"><span>Подъём в дни площадки</span><input class="tin" type="time" id="sc_gw" value="${S.gw}"></label>
+      <label class="qrow" for="sc_gb"><span>Отбой накануне площадки</span><input class="tin" type="time" id="sc_gb" value="${S.gb}"></label>
+      <label class="qrow" for="sc_gf"><span>Площадка по графику с</span><input class="tin" type="date" id="sc_gf" value="${S.gf}"></label>
       <button type="button" class="go" data-act="schsave">Сохранить</button></div>`:""}</section>`}
 /* обработчики */
 $("t-today").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
@@ -1451,7 +1451,7 @@ $("t-today").addEventListener("click",e=>{const b=e.target.closest("button");if(
   if(d.bt){e.stopPropagation();const D=getDay(TODAY);D.bt=+d.bt;setDay(TODAY,D);b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderHead();return}
   if(d.pp){e.stopPropagation();const p=(L.ppl||[]).find(x=>x.id===d.pp);if(!p)return;withXp(()=>{p.last=TODAY;L.learn=L.learn||[];L.learn.push({id:rid(),dt:TODAY,type:"контакт",t:p.n,pr:"pro",note:""});saveL()},b,css("--pro"),"Связь поддержана, +10",0);renderToday();return}
   if(d.gd!==undefined){e.stopPropagation();b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true");return}
-  if(d.act==="gymdone"){e.stopPropagation();withXp(()=>{const D=getDay(TODAY);D.gym=1;setDay(TODAY,D)},b,css("--health"),"Зал сделан, +30. День уже удался",2);renderToday();return}
+  if(d.act==="gymdone"){e.stopPropagation();withXp(()=>{const D=getDay(TODAY);D.gym=1;setDay(TODAY,D)},b,css("--health"),"Тренировка сделана, +30. День уже удался",2);renderToday();return}
   if(d.act==="gymskip"){e.stopPropagation();const D=getDay(TODAY);D.gym=2;setDay(TODAY,D);toast("Бывает. Главное — не пропустить следующую");renderToday();return}
   if(d.act==="schopen"){e.stopPropagation();schOpen=!schOpen;renderToday();return}
   if(d.act==="schsave"){e.stopPropagation();const n={};for(const k in SCHN){const v=$("sc_"+k).value;if(/^\d\d:\d\d$/.test(v))n[k]=v}const old=sch();n.from=$("sc_shift").checked?(old.from||TODAY):"";n.gd=[...document.querySelectorAll("[data-gd][aria-pressed=true]")].map(x=>x.dataset.gd).join("");["gw","gb"].forEach(k=>{const v=$("sc_"+k).value;if(/^\d\d:\d\d$/.test(v))n[k]=v});n.gf=DR.test($("sc_gf").value)?$("sc_gf").value:"";L.sch={...old,...n};schOpen=false;saveL();renderToday();toast("Режим сохранён");return}
