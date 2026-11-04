@@ -365,11 +365,11 @@ button,a,label,.chip,.ck,.it .tx{touch-action:manipulation}
     <div class="ch"><h2>Синхронизация мака и айфона</h2></div>
     <p class="note">Данные лежат в закрытом репозитории на вашем GitHub. Подключите его один раз на каждом устройстве. Токен хранится только в этом браузере.</p>
     <div class="add-t">
-      <input class="tin" type="text" id="ghOwner" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Логин на GitHub">
-      <input class="tin" type="text" id="ghRepo" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Закрытый репозиторий: podsnezhnik-data">
+      <input class="tin" type="text" id="ghOwner" autocorrect="off" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Логин на GitHub">
+      <input class="tin" type="text" id="ghRepo" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Закрытый репозиторий: podsnezhnik-data" autocorrect="off">
       <input class="tin" type="password" id="ghTok" autocomplete="off" spellcheck="false" placeholder="Токен доступа github_pat_…">
       <div class="btns"><button type="button" class="go" id="ghOn">Подключить</button><button type="button" class="go ghost" id="ghOff">Отключить</button></div>
-      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 16:41</p>
+      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 16:50</p>
     </div>
     <div class="ch" style="margin-top:14px"><h2>Резервная копия</h2></div>
     <div class="add-t">
@@ -1392,7 +1392,10 @@ $("syncBtn").onclick=()=>{const x=$("syncBox");x.hidden=!x.hidden;if(!x.hidden)x
 $("ghOn").onclick=async()=>{const owner=$("ghOwner").value.trim(),repo=$("ghRepo").value.trim()||"podsnezhnik-data",token=$("ghTok").value.trim()||(GH&&GH.token);
   if(!owner||!token){$("ghMsg").textContent="Впишите логин и токен";return}
   const prev=GH;GH={owner,repo,token};$("ghMsg").textContent="Проверяю…";
-  try{const {sha,data}=await ghGet();ghSha=sha;try{localStorage.setItem(GHK,JSON.stringify(GH))}catch(e){}
+  try{const rr=await tfetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,{headers:ghHdr(),cache:"no-store"});
+    if(rr.status===404||rr.status===403)throw new Error("репозиторий «"+repo+"» не найден или токен к нему не допущен. Для данных нужен закрытый podsnezhnik-data");
+    if(rr.ok){const ri=await rr.json();if(ri.private===false)throw new Error("«"+repo+"» — открытый репозиторий, его видят все. Данные можно хранить только в закрытом, например podsnezhnik-data")}
+    const {sha,data}=await ghGet();ghSha=sha;try{localStorage.setItem(GHK,JSON.stringify(GH))}catch(e){}
     const docs=toDocs(data),arr=Object.keys(docs).map(id=>({id,exists:true,data:()=>JSON.parse(JSON.stringify(docs[id]))}));
     if(arr.length){DIRTY={};BASE=JSON.parse(JSON.stringify(docs));saveBase();applyDocs(arr);localSave();renderAll();renderMoney();growBall();setSave("Синхронизировано");$("ghMsg").textContent="Подключено: "+owner+"/"+repo+". Данные загружены."}
     else{for(const id in allDocs())DIRTY[id]=1;await push()}
