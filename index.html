@@ -728,7 +728,7 @@ try{GH=JSON.parse(localStorage.getItem(GHK))}catch(e){}
 try{DIRTY=JSON.parse(localStorage.getItem(DTK))||{}}catch(e){}
 function localSave(){try{localStorage.setItem(ECO,JSON.stringify({L,Y,N,S,F,FM,DC}));localStorage.setItem(DTK,JSON.stringify(DIRTY))}catch(e){}}
 async function saveDoc(id){DIRTY[id]=1;localSave();
-  if(!GH){setSave("На этом устройстве");return}setSave("Синхронизирую…");clearTimeout(pushT);pushT=setTimeout(push,1200)}
+  if(!GH){setSave("На этом устройстве");return}setSave("Синхронизирую…");clearTimeout(pushT);pushT=setTimeout(()=>{pushT=null;push()},1000)}
 const saveL=()=>saveDoc("life");
 
 /* ---------- праздник ---------- */
@@ -1347,24 +1347,29 @@ const ghUrl=()=>`https://api.github.com/repos/${encodeURIComponent(GH.owner)}/${
 const ghHdr=()=>({"Authorization":"Bearer "+GH.token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"});
 function allDocs(){const d={life:L,fin:F,snow:S,divcal:DC};for(const y in Y)d["y"+y]={done:Y[y]};for(const m in FM)d["f"+m]=FM[m];for(const m in N)d["n"+m]={items:N[m]};return JSON.parse(JSON.stringify(d))}
 function toDocs(data){if(!data)return{};if(data.docs&&typeof data.docs==="object")return data.docs;if(Array.isArray(data.pf)||data.p)return{snow:data};return{}}
-async function ghGet(){const r=await fetch(ghUrl()+"?t="+Date.now(),{headers:ghHdr(),cache:"no-store"});
+function tfetch(u,o,ms=15000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);return fetch(u,{...o,signal:c.signal}).catch(e=>{throw new Error(e.name==="AbortError"?"GitHub не ответил, проверьте интернет":"нет связи с GitHub")}).finally(()=>clearTimeout(t))}
+async function ghGet(){const r=await tfetch(ghUrl()+"?t="+Date.now(),{headers:ghHdr(),cache:"no-store"});
   if(r.status===404)return{sha:null,data:null};if(!r.ok)throw new Error(r.status===401?"токен не подходит":r.status===403?"у токена нет доступа к репозиторию":"ошибка GitHub "+r.status);
   const j=await r.json();return{sha:j.sha,data:JSON.parse(b64d(j.content))}}
 async function ghPut(){const body={v:2,ts:Date.now(),docs:allDocs()};
-  const r=await fetch(ghUrl(),{method:"PUT",headers:{...ghHdr(),"Content-Type":"application/json"},body:JSON.stringify({message:"Подснежник: "+TODAY,content:b64e(JSON.stringify(body)),...(ghSha?{sha:ghSha}:{})})});
+  const r=await tfetch(ghUrl(),{method:"PUT",headers:{...ghHdr(),"Content-Type":"application/json"},body:JSON.stringify({message:"Подснежник: "+TODAY,content:b64e(JSON.stringify(body)),...(ghSha?{sha:ghSha}:{})})});
   if(r.status===409||r.status===422)return false;if(!r.ok)throw new Error(r.status===401?"токен не подходит":r.status===403||r.status===404?"у токена нет права записи в репозиторий":"ошибка GitHub "+r.status);
   const j=await r.json();ghSha=j.content.sha;return true}
 /* с другого устройства берём всё, что здесь не менялось; свои несохранённые правки оставляем и отправляем */
 async function pull(){if(!GH)return;const {sha,data}=await ghGet();ghSha=sha;const docs=toDocs(data),arr=[];
   for(const id in docs)if(!DIRTY[id])arr.push({id,exists:true,data:()=>JSON.parse(JSON.stringify(docs[id]))});
   const ch=applyDocs(arr);if(ch)localSave();return{ch,empty:!data}}
-async function push(){if(!GH)return;if(ghBusy){ghAgain=true;return}ghBusy=true;const sent=JSON.stringify(DIRTY);
+let busyAt=0;const isBusy=()=>ghBusy&&Date.now()-busyAt<40000;
+async function push(){if(!GH)return;if(isBusy()){ghAgain=true;return}ghBusy=true;busyAt=Date.now();const sent=JSON.stringify(DIRTY);
   try{if(!await ghPut()){await pull();if(!await ghPut())throw new Error("не удалось записать, попробуйте ещё раз")}
-    if(JSON.stringify(DIRTY)===sent)DIRTY={};else for(const k in JSON.parse(sent))delete DIRTY[k];localSave();setSave("Синхронизировано");$("ghMsg").textContent="Подключено: "+GH.owner+"/"+GH.repo}
+    if(JSON.stringify(DIRTY)===sent)DIRTY={};else for(const k in JSON.parse(sent))delete DIRTY[k];localSave();okSave();$("ghMsg").textContent="Подключено: "+GH.owner+"/"+GH.repo}
   catch(e){setSave("Нет синхронизации");$("ghMsg").textContent="Не получилось: "+e.message}
   ghBusy=false;if(ghAgain){ghAgain=false;push()}}
-async function sync(quiet){if(!GH||ghBusy)return;const a=document.activeElement;if(quiet&&a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&a.value)return;
-  try{const r=await pull();if(Object.keys(DIRTY).length||r.empty)await push();else setSave(r.ch?"Обновлено с другого устройства":"Синхронизировано")}
+const hm=()=>new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+function okSave(t){setSave((t||"Синхронизировано")+" в "+hm())}
+let lastSync=0;
+async function sync(quiet){if(!GH||isBusy())return;lastSync=Date.now();const a=document.activeElement;if(quiet&&a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&a.value)return;
+  try{const r=await pull();if(Object.keys(DIRTY).length||r.empty)await push();else okSave(r.ch?"Обновлено с другого устройства":"Синхронизировано")}
   catch(e){setSave("Нет синхронизации");$("ghMsg").textContent="Не получилось: "+e.message}}
 function ghFields(){if(GH){$("ghOwner").value=GH.owner;$("ghRepo").value=GH.repo;$("ghTok").value="";$("ghTok").placeholder="токен сохранён на этом устройстве";$("ghMsg").textContent="Подключено: "+GH.owner+"/"+GH.repo}else $("ghMsg").textContent="Не подключено. Данные хранятся только в этом браузере."}
 ghFields();
@@ -1408,10 +1413,15 @@ async function refreshDivs(){const tks=[...new Set(S.pf.filter(x=>x.q>0).map(x=>
     DC=cleanDC({upd:TODAY,items});localSave();renderMoney();renderAll()}catch(e){}}
 document.addEventListener("click",e=>{const b=e.target.closest('button[data-act="iss"]');if(b){e.stopPropagation();refreshPrices(true,b);refreshDivs()}},true);
 function autoPx(){let at=0;try{at=+localStorage.getItem(PXK)||0}catch(e){}if(Date.now()-at>30*60e3){refreshPrices(false);refreshDivs()}}
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){sync(true);autoPx()}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){sync(true);autoPx()}else if(GH&&pushT){clearTimeout(pushT);pushT=null;push()}});
+addEventListener("focus",()=>{if(Date.now()-lastSync>15000)sync(true)});
+addEventListener("pageshow",e=>{if(e.persisted)sync(true)});
+addEventListener("online",()=>sync(true));
+$("save").style.cursor="pointer";$("save").title="Синхронизировать сейчас";
+$("save").addEventListener("click",()=>{if(!GH){$("syncBox").hidden=false;$("syncBox").scrollIntoView({behavior:"smooth"});return}setSave("Синхронизирую…");sync(false)});
 setSave(GH?"Синхронизирую…":"На этом устройстве");
 (async()=>{await sync(false);autoPx()})();
-setInterval(()=>sync(true),5*60e3);
+setInterval(()=>{if(document.visibilityState==="visible")sync(true)},60e3);
 setInterval(()=>{if(ds(new Date())!==TODAY)location.reload()},60000);
 </script>
 
