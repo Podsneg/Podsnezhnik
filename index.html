@@ -722,7 +722,20 @@ const lvlOf=xp=>Math.floor((Math.sqrt(1+8*xp/100)-1)/2)+1,lvlAt=n=>100*n*(n-1)/2
 /* ---------- сохранение (общая очередь документов) ---------- */
 const busy={},again={};let col=null;
 function bodyOf(id){if(id==="life")return L;if(id==="fin")return F;if(/^f\d{4}-\d{2}$/.test(id))return FM[id.slice(1)]||{tx:[],paid:{}};if(id==="snow")return S;if(/^y\d{4}$/.test(id))return{done:Y[id.slice(1)]||{}};if(/^n\d{4}-\d{2}$/.test(id))return{items:N[id.slice(1)]||[]};return null}
-const ECO="podsnezhnik.eco",GHK="podsnezhnik.gh",DTK="podsnezhnik.dirty";
+const ECO="podsnezhnik.eco",GHK="podsnezhnik.gh",DTK="podsnezhnik.dirty",BSK="podsnezhnik.base";
+/* BASE — последняя версия, которая лежала на GitHub. По ней понятно, что поменяли здесь, а что на другом устройстве */
+let BASE={};try{BASE=JSON.parse(localStorage.getItem(BSK))||{}}catch(e){}
+function saveBase(){try{localStorage.setItem(BSK,JSON.stringify(BASE))}catch(e){}}
+const isO=x=>x&&typeof x==="object"&&!Array.isArray(x),eqJ=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const keyOf=x=>isO(x)?(x.id!=null?"id:"+x.id:(x.tk!=null&&x.dt==null?"tk:"+x.tk:null)):null;
+/* трёхстороннее слияние: правки с обоих устройств сохраняются; если одно и то же поле меняли оба — побеждает это устройство */
+function merge3(b,l,r){if(eqJ(l,r))return l;if(b!==undefined&&eqJ(l,b))return r;if(b!==undefined&&eqJ(r,b))return l;
+  if(isO(l)&&isO(r)){const o={},bb=isO(b)?b:{};for(const k of new Set([...Object.keys(l),...Object.keys(r)])){const inL=k in l,inR=k in r,inB=k in bb;
+      if(inL&&inR)o[k]=merge3(bb[k],l[k],r[k]);else if(inL){if(inB&&eqJ(bb[k],l[k]))continue;o[k]=l[k]}else{if(inB&&eqJ(bb[k],r[k]))continue;o[k]=r[k]}}return o}
+  if(Array.isArray(l)&&Array.isArray(r)&&l.concat(r).every(x=>keyOf(x))){const bm=new Map((Array.isArray(b)?b:[]).filter(keyOf).map(x=>[keyOf(x),x])),lm=new Map(l.map(x=>[keyOf(x),x])),rm=new Map(r.map(x=>[keyOf(x),x])),out=[],seen=new Set();
+    for(const x of [...l,...r]){const k=keyOf(x);if(seen.has(k))continue;seen.add(k);const a=lm.get(k),c=rm.get(k),bx=bm.get(k);
+      if(a&&c)out.push(merge3(bx,a,c));else if(a){if(bx&&eqJ(bx,a))continue;out.push(a)}else{if(bx&&eqJ(bx,c))continue;out.push(c)}}return out}
+  return l}
 let GH=null,ghSha=null,pushT=null,ghBusy=false,ghAgain=false,DIRTY={};
 try{GH=JSON.parse(localStorage.getItem(GHK))}catch(e){}
 try{DIRTY=JSON.parse(localStorage.getItem(DTK))||{}}catch(e){}
@@ -1351,18 +1364,20 @@ function tfetch(u,o,ms=15000){const c=new AbortController(),t=setTimeout(()=>c.a
 async function ghGet(){const r=await tfetch(ghUrl()+"?t="+Date.now(),{headers:ghHdr(),cache:"no-store"});
   if(r.status===404)return{sha:null,data:null};if(!r.ok)throw new Error(r.status===401?"токен не подходит":r.status===403?"у токена нет доступа к репозиторию":"ошибка GitHub "+r.status);
   const j=await r.json();return{sha:j.sha,data:JSON.parse(b64d(j.content))}}
-async function ghPut(){const body={v:2,ts:Date.now(),docs:allDocs()};
+let lastSent=null;
+async function ghPut(){const body={v:2,ts:Date.now(),docs:allDocs()};lastSent=body.docs;
   const r=await tfetch(ghUrl(),{method:"PUT",headers:{...ghHdr(),"Content-Type":"application/json"},body:JSON.stringify({message:"Подснежник: "+TODAY,content:b64e(JSON.stringify(body)),...(ghSha?{sha:ghSha}:{})})});
   if(r.status===409||r.status===422)return false;if(!r.ok)throw new Error(r.status===401?"токен не подходит":r.status===403||r.status===404?"у токена нет права записи в репозиторий":"ошибка GitHub "+r.status);
   const j=await r.json();ghSha=j.content.sha;return true}
 /* с другого устройства берём всё, что здесь не менялось; свои несохранённые правки оставляем и отправляем */
 async function pull(){if(!GH)return;const {sha,data}=await ghGet();ghSha=sha;const docs=toDocs(data),arr=[];
-  for(const id in docs)if(!DIRTY[id])arr.push({id,exists:true,data:()=>JSON.parse(JSON.stringify(docs[id]))});
-  const ch=applyDocs(arr);if(ch)localSave();return{ch,empty:!data}}
+  const loc=allDocs();
+  for(const id in docs){let v=docs[id];if(DIRTY[id]&&loc[id]!==undefined)v=merge3(BASE[id],loc[id],docs[id]);const vv=v;arr.push({id,exists:true,data:()=>JSON.parse(JSON.stringify(vv))});BASE[id]=docs[id]}
+  saveBase();const ch=applyDocs(arr);if(ch)localSave();return{ch,empty:!data}}
 let busyAt=0;const isBusy=()=>ghBusy&&Date.now()-busyAt<40000;
 async function push(){if(!GH)return;if(isBusy()){ghAgain=true;return}ghBusy=true;busyAt=Date.now();const sent=JSON.stringify(DIRTY);
   try{if(!await ghPut()){await pull();if(!await ghPut())throw new Error("не удалось записать, попробуйте ещё раз")}
-    if(JSON.stringify(DIRTY)===sent)DIRTY={};else for(const k in JSON.parse(sent))delete DIRTY[k];localSave();okSave();$("ghMsg").textContent="Подключено: "+GH.owner+"/"+GH.repo}
+    if(lastSent){BASE=JSON.parse(JSON.stringify(lastSent));saveBase()}if(JSON.stringify(DIRTY)===sent)DIRTY={};else for(const k in JSON.parse(sent))delete DIRTY[k];localSave();okSave();$("ghMsg").textContent="Подключено: "+GH.owner+"/"+GH.repo}
   catch(e){setSave("Нет синхронизации");$("ghMsg").textContent="Не получилось: "+e.message}
   ghBusy=false;if(ghAgain){ghAgain=false;push()}}
 const hm=()=>new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
@@ -1379,7 +1394,7 @@ $("ghOn").onclick=async()=>{const owner=$("ghOwner").value.trim(),repo=$("ghRepo
   const prev=GH;GH={owner,repo,token};$("ghMsg").textContent="Проверяю…";
   try{const {sha,data}=await ghGet();ghSha=sha;try{localStorage.setItem(GHK,JSON.stringify(GH))}catch(e){}
     const docs=toDocs(data),arr=Object.keys(docs).map(id=>({id,exists:true,data:()=>JSON.parse(JSON.stringify(docs[id]))}));
-    if(arr.length){DIRTY={};applyDocs(arr);localSave();renderAll();renderMoney();growBall();setSave("Синхронизировано");$("ghMsg").textContent="Подключено: "+owner+"/"+repo+". Данные загружены."}
+    if(arr.length){DIRTY={};BASE=JSON.parse(JSON.stringify(docs));saveBase();applyDocs(arr);localSave();renderAll();renderMoney();growBall();setSave("Синхронизировано");$("ghMsg").textContent="Подключено: "+owner+"/"+repo+". Данные загружены."}
     else{for(const id in allDocs())DIRTY[id]=1;await push()}
     ghFields();toast("Синхронизация включена")}
   catch(e){GH=prev;$("ghMsg").textContent="Не получилось: "+e.message}};
