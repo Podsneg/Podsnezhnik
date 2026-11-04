@@ -375,7 +375,7 @@ button,a,label,.chip,.ck,.it .tx{touch-action:manipulation}
       <input class="tin" type="text" id="ghRepo" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Закрытый репозиторий: podsnezhnik-data" autocorrect="off">
       <input class="tin" type="password" id="ghTok" autocomplete="off" spellcheck="false" placeholder="Токен доступа github_pat_…">
       <div class="btns"><button type="button" class="go" id="ghOn">Подключить</button><button type="button" class="go ghost" id="ghOff">Отключить</button></div>
-      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 16:54</p>
+      <p class="note" id="ghMsg"></p><p class="note">Версия приложения: 04.11 16:57</p>
     </div>
     <div class="ch" style="margin-top:14px"><h2>Резервная копия</h2></div>
     <div class="add-t">
@@ -695,7 +695,7 @@ function cleanL(o){const l=freshL();if(!o||typeof o!=="object")return l;
   if(Array.isArray(o.rw))l.rw=o.rw.filter(x=>x&&x.id&&x.t&&x.p>0).map(x=>({id:String(x.id),t:String(x.t).slice(0,60),p:Math.round(+x.p)}));
   if(Array.isArray(o.cl))l.cl=o.cl.filter(x=>x&&x.id&&x.p>0&&DR.test(x.dt)).map(x=>({id:String(x.id),dt:x.dt,t:String(x.t||"").slice(0,60),p:Math.round(+x.p)}));
   if(Array.isArray(o.bon))l.bon=o.bon.filter(x=>x&&x.k&&x.pts>0).map(x=>({k:String(x.k),pts:Math.round(+x.pts),dt:DR.test(x.dt||"")?x.dt:TODAY}));
-  if(o.smk&&DR.test(o.smk.quit||"")&&o.smk.cpd>0){l.smk={quit:o.smk.quit,cpd:Math.round(+o.smk.cpd),price:Math.max(0,+o.smk.price||0),plan:{}};if(o.smk.plan&&typeof o.smk.plan==="object")for(const k in o.smk.plan)l.smk.plan[String(k).slice(0,30)]=String(o.smk.plan[k]).slice(0,80)}
+  if(o.smk&&DR.test(o.smk.quit||"")&&o.smk.cpd>0){l.smk={quit:o.smk.quit,cpd:Math.round(+o.smk.cpd),price:Math.max(0,+o.smk.price||0),kind:o.smk.kind==="cig"?"cig":"stick",plan:{}};if(o.smk.plan&&typeof o.smk.plan==="object")for(const k in o.smk.plan)l.smk.plan[String(k).slice(0,30)]=String(o.smk.plan[k]).slice(0,80)}
   if(Array.isArray(o.books))l.books=o.books.filter(x=>x&&x.id&&x.t).map(x=>({id:String(x.id),t:String(x.t).slice(0,100),au:String(x.au||"").slice(0,60),pr:AREAS.some(a=>a.k===x.pr)?x.pr:"pro",tot:Math.max(1,Math.round(+x.tot||300)),pg:Math.max(0,Math.round(+x.pg||0)),done:DR.test(x.done||"")?x.done:""}));
   if(Array.isArray(o.learn))l.learn=o.learn.filter(x=>x&&x.id&&x.t&&DR.test(x.dt)).map(x=>({id:String(x.id),dt:x.dt,type:String(x.type||"лекция").slice(0,30),t:String(x.t).slice(0,120),pr:AREAS.some(a=>a.k===x.pr)?x.pr:"pro",note:String(x.note||"").slice(0,2000)}));
   if(Array.isArray(o.ppl))l.ppl=o.ppl.filter(x=>x&&x.id&&x.n).map(x=>({id:String(x.id),n:String(x.n).slice(0,60),role:String(x.role||"").slice(0,60),last:DR.test(x.last||"")?x.last:"",every:[30,60,90].includes(+x.every)?+x.every:60}));
@@ -815,7 +815,7 @@ function achList(T){T=T||totals();const ms=typeof streak==="function"?streak():0
   ["Первый шаг","первое дело отмечено",T.hd+T.tdone>=1],["Баланс","дело в каждой сфере за день",T.bal>=1],["Неделя баланса","7 дней подряд",T.best>=7],["Месяц баланса","30 дней подряд",T.best>=30],
   ["10 задач","закрыто десять",T.tdone>=10],["100 задач","закрыто сто",T.tdone>=100],["Дневник ×7","семь вечеров записано",T.diary>=7],["Дневник ×30","тридцать вечеров",T.diary>=30],
   ["Цель недели","первая закрыта",T.gw>=1],["Большая цель","месяц или год",T.gm>=1],["Ритуал ×3","три месяца инвестиций подряд",ms>=3],["Первые дивиденды","собраны",gotDiv>=1],
-  ["Здоровье ×25","25 дел для здоровья",T.pa[0]>=25],["Профессия ×25","25 шагов в профессии",T.pa[3]>=25],["Сутки без сигарет","первый день",(()=>{const s=smoke();return!!s&&!s.before&&s.streak>=1})()],["Неделя без сигарет","7 дней подряд",(()=>{const s=smoke();return!!s&&!s.before&&s.streak>=7})()],["Месяц без сигарет","30 дней подряд",(()=>{const s=smoke();return!!s&&!s.before&&s.streak>=30})()],["Первая книга","прочитана целиком",(L.books||[]).some(b=>b.done)],["10 шагов развития","лекции, конспекты, инициативы",(L.learn||[]).length>=10],["Час фокуса","60 минут в сумме",T.fxm>=60],["10 часов фокуса","глубокая работа",T.fxm>=600],["Обзор недели","первый",T.revs>=1],["Обзоры ×4","месяц осознанно",T.revs>=4]]}
+  ["Здоровье ×25","25 дел для здоровья",T.pa[0]>=25],["Профессия ×25","25 шагов в профессии",T.pa[3]>=25],["Сутки без курения","первый день",(()=>{const s=smoke();return!!s&&!s.before&&s.streak>=1})()],["Неделя без курения","7 дней подряд",(()=>{const s=smoke();return!!s&&!s.before&&s.streak>=7})()],["Месяц без курения","30 дней подряд",(()=>{const s=smoke();return!!s&&!s.before&&s.streak>=30})()],["Первая книга","прочитана целиком",(L.books||[]).some(b=>b.done)],["10 шагов развития","лекции, конспекты, инициативы",(L.learn||[]).length>=10],["Час фокуса","60 минут в сумме",T.fxm>=60],["10 часов фокуса","глубокая работа",T.fxm>=600],["Обзор недели","первый",T.revs>=1],["Обзоры ×4","месяц осознанно",T.revs>=4]]}
 
 /* ---------- отрисовка: шапка ---------- */
 function renderHead(T){T=T||totals();const L1=lvlOf(T.xp);const e=$("ptsB");if(e){countTo(e,T.pts,v=>nf0.format(Math.round(v)));$("ptsL").textContent=L1;$("ptsS").textContent="сегодня +"+T.today}}
@@ -1086,7 +1086,7 @@ function insights(){const out=[];const days=[];for(let i=0;i<30;i++){const d=add
   const sp=mo.filter(x=>x[2].per[0].d>0),ns=mo.filter(x=>x[2].per[0].t>0&&x[2].per[0].d===0);
   if(sp.length>=4&&ns.length>=4){const a=sp.reduce((s,x)=>s+x[1].m,0)/sp.length,b=ns.reduce((s,x)=>s+x[1].m,0)/ns.length;out.push([nf1.format(a)+" / "+nf1.format(b),"настроение в дни с делами для здоровья и без них"])}
   const al=days.filter(x=>x[1].al).length,al2=days.filter(x=>x[1].al===2).length;if(al||days.some(x=>x[1].pm))out.push([al+"",plural(al,"день","дня","дней")+" с алкоголем за 30 дней"+(al2?", из них без особого желания: "+al2:"")]);
-  const cg=days.reduce((a,x)=>a+(x[1].cg||0),0);if(L.smk)out.push([cg+"","сигарет за 30 дней"]);
+  const cg=days.reduce((a,x)=>a+(x[1].cg||0),0);if(L.smk)out.push([cg+"",(L.smk&&L.smk.kind==="cig"?"сигарет":"стиков")+" за 30 дней"]);
   const good=sl.filter(x=>x[1].sl>=7&&x[1].m),bad=sl.filter(x=>x[1].sl<7&&x[1].m);
   if(good.length>=4&&bad.length>=4){const a=good.reduce((s,x)=>s+x[1].m,0)/good.length,b=bad.reduce((s,x)=>s+x[1].m,0)/bad.length;out.push([nf1.format(a)+" / "+nf1.format(b),"настроение после сна от 7 часов и меньше"])}
   const fx=days.reduce((a,x)=>a+(x[1].fx||0),0);if(fx)out.push([Math.round(fx/60*10)/10+" ч","фокуса за 30 дней"]);
@@ -1244,7 +1244,11 @@ $("t-fin").addEventListener("change",e=>{if(e.target.id==="fIncP"){F.inc=Math.ma
 /* ================= ПРИНЦИПЫ: курение, обещания себе, развитие ================= */
 /* --- отказ от курения --- */
 const TRIG=["кофе","после еды","стресс","перерыв на работе","скука","алкоголь","с друзьями","за рулём","утро"];
-const MILES=[[20/1440,"20 минут","пульс и давление начинают снижаться"],[.5,"12 часов","уровень угарного газа в крови приходит в норму"],[14,"2 недели","улучшаются кровообращение и работа лёгких"],[30,"1 месяц","меньше кашля и одышки, легче дышать"],[90,"3 месяца","функция лёгких заметно растёт"],[365,"1 год","риск ишемической болезни сердца вдвое ниже, чем у курящего"],[1825,"5 лет","риск инсульта снижается, со временем до уровня некурящего"],[3650,"10 лет","риск рака лёгких примерно вдвое ниже, чем у курящего"]];
+const MILES_C=[[20/1440,"20 минут","пульс и давление начинают снижаться"],[.5,"12 часов","уровень угарного газа в крови приходит в норму"],[14,"2 недели","улучшаются кровообращение и работа лёгких"],[30,"1 месяц","меньше кашля и одышки, легче дышать"],[90,"3 месяца","функция лёгких заметно растёт"],[365,"1 год","риск ишемической болезни сердца вдвое ниже, чем у курящего"],[1825,"5 лет","риск инсульта снижается, со временем до уровня некурящего"],[3650,"10 лет","риск рака лёгких примерно вдвое ниже, чем у курящего"]];
+/* для стиков: этапы отмены никотина. Отдалённые эффекты нагреваемого табака изучены мало, поэтому без обещаний про рак и сердце */
+const MILES_S=[[20/1440,"20 минут","пульс и давление, поднятые никотином, начинают снижаться"],[1,"1 день","меньше никотина в крови, тело начинает перестраиваться"],[3,"3 дня","никотин почти вышел из организма. Тяга сейчас на пике — дальше будет легче"],[14,"2 недели","раздражительность, тревога и сон обычно приходят в норму"],[30,"1 месяц","тяга реже и слабее, большинство ситуаций уже пройдены без стика"],[90,"3 месяца","привычка ослабла: триггеры почти не срабатывают"],[365,"1 год","риск вернуться к курению намного ниже, чем в первые месяцы"]];
+const SK=()=>(L.smk&&L.smk.kind==="cig")?{k:"cig",one:"сигарета",gen:"сигарет",ins:"сигареты",M:MILES_C}:{k:"stick",one:"стик",gen:"стиков",ins:"стика",M:MILES_S};
+let skKind="stick";
 let smkLater=false,WV=null,wvI=null,smkTrigAsk=false;
 function smoke(){const k=L.smk;if(!k||!k.quit)return null;const before=TODAY<k.quit;let free=0,notSm=0,streakStart=k.quit,lastSlip="";
   for(let d=k.quit;d<=TODAY;d=addD(d,1)){const D=getDay(d);if(!D.cg)free++;else{lastSlip=d;streakStart=addD(d,1)}notSm+=Math.max(0,k.cpd-(D.cg||0))}
@@ -1254,8 +1258,8 @@ function smoke(){const k=L.smk;if(!k||!k.quit)return null;const before=TODAY<k.q
 function trigWeek(){const c={};for(let i=0;i<7;i++){const D=getDay(addD(TODAY,-i));for(const t in (D.tg||{}))c[t]=(c[t]||0)+D.tg[t]}return Object.entries(c).sort((a,b)=>b[1]-a[1])}
 function smokeCard(){const k=L.smk,D=getDay(TODAY);
   if(!k){if(smkLater)return"";return `<section class="card smk" style="--c:var(--health)"><div class="ch"><h2>Бросить курить</h2><span>Здоровье</span></div>
-    <p class="note">Лучше всего работает сочетание трёх вещей: дата отказа в ближайшие 1–2 недели, план на ситуации, где тянет, и поддержка. Никотинозаместительная терапия или препараты от врача заметно повышают шансы — это стоит обсудить с терапевтом.</p>
-    <div class="r"><label class="fld" for="skCpd">Сигарет в день сейчас<input type="number" id="skCpd" inputmode="numeric" min="1" max="80" step="1"></label><label class="fld" for="skPr">Цена пачки, ₽<input type="number" id="skPr" inputmode="numeric" min="0" step="10"></label></div>
+    <p class="note">${skKind==="stick"?"Стики — та же никотиновая зависимость, а отдалённый вред нагреваемого табака пока изучен мало, так что отказ от них того стоит. ":""}Лучше всего работает сочетание трёх вещей: дата отказа в ближайшие 1–2 недели, план на ситуации, где тянет, и поддержка. Никотинозаместительная терапия или препараты от врача заметно повышают шансы — это стоит обсудить с терапевтом.</p>
+    <div class="r"><div class="chips" style="grid-column:1/-1">${[["stick","Стики"],["cig","Сигареты"]].map(([k,n])=>`<button type="button" class="chip" data-skk="${k}" aria-pressed="${skKind===k}">${n}</button>`).join("")}</div><label class="fld" for="skCpd">${skKind==="cig"?"Сигарет":"Стиков"} в день сейчас<input type="number" id="skCpd" inputmode="numeric" min="1" max="80" step="1"></label><label class="fld" for="skPr">Цена пачки, ₽<input type="number" id="skPr" inputmode="numeric" min="0" step="10"></label></div>
     <div class="qrow"><span>День отказа</span><div class="chips">${[[7,"через неделю"],[14,"через 2 недели"],[0,"сегодня"]].map(([n,t])=>`<button type="button" class="chip" data-skq="${addD(TODAY,n)}" aria-pressed="${n===7}">${t}</button>`).join("")}</div><input class="tin" type="date" id="skQ" value="${addD(TODAY,7)}" min="${TODAY}" aria-label="Дата отказа"></div>
     <div class="btns"><button type="button" class="go" data-sk="setup">Составить план</button><button type="button" class="lnk2" data-sk="later">Позже</button></div></section>`}
   const s=smoke();
@@ -1264,31 +1268,32 @@ function smokeCard(){const k=L.smk,D=getDay(TODAY);
     <small>Тяга обычно достигает пика и спадает за несколько минут. Дышите: вдох на 4 счёта, выдох на 6. Выпейте воды, смените место.${tp&&k.plan&&k.plan[tp[0]]?" Ваш план: "+esc(k.plan[tp[0]])+".":""}</small>
     <div class="btns"><button type="button" class="go" data-sk="wvok">Тяга прошла</button><button type="button" class="lnk2" data-sk="slip">Сорвался</button></div></section>`}
   if(s.before){const tw=trigWeek().slice(0,3);return `<section class="card smk" style="--c:var(--health)"><div class="ch"><h2>До дня отказа ${s.daysTo} ${plural(s.daysTo,"день","дня","дней")}</h2><span>${fmtD(k.quit)}</span></div>
-    <p class="note">Пока не бросаете, а изучаете привычку: отмечайте каждую сигарету и что к ней подтолкнуло.</p>
+    <p class="note">Пока не бросаете, а изучаете привычку: отмечайте ${SK().k==="stick"?"каждый стик и что к нему":"каждую сигарету и что к ней"} подтолкнуло.</p>
     <div class="btns"><span class="fbig" style="font-size:34px">${D.cg||0}</span><span class="note">сегодня из обычных ${k.cpd}</span></div>
-    ${smkTrigAsk?`<div class="qrow"><span>Что подтолкнуло?</span><div class="chips">${TRIG.map(t=>`<button type="button" class="chip" data-sktg="${t}">${t}</button>`).join("")}</div></div>`:`<button type="button" class="go ghost" data-sk="cig">+1 сигарета</button>`}
-    ${tw.length?`<div class="qrow"><span>Ваши главные триггеры за неделю. Решите заранее, что будете делать вместо сигареты:</span>${tw.map(([t,n])=>`<label class="fld" for="skp_${TRIG.indexOf(t)}">Если ${t} (${n} раз), то я…<input type="text" id="skp_${TRIG.indexOf(t)}" data-skplan="${t}" maxlength="80" value="${esc((k.plan||{})[t]||"")}" placeholder="например: выйду пройтись 5 минут"></label>`).join("")}</div>`:""}
+    ${smkTrigAsk?`<div class="qrow"><span>Что подтолкнуло?</span><div class="chips">${TRIG.map(t=>`<button type="button" class="chip" data-sktg="${t}">${t}</button>`).join("")}</div></div>`:`<button type="button" class="go ghost" data-sk="cig">+1 ${SK().one}</button>`}
+    ${tw.length?`<div class="qrow"><span>Ваши главные триггеры за неделю. Решите заранее, что будете делать вместо ${SK().ins}:</span>${tw.map(([t,n])=>`<label class="fld" for="skp_${TRIG.indexOf(t)}">Если ${t} (${n} раз), то я…<input type="text" id="skp_${TRIG.indexOf(t)}" data-skplan="${t}" maxlength="80" value="${esc((k.plan||{})[t]||"")}" placeholder="например: выйду пройтись 5 минут"></label>`).join("")}</div>`:""}
     <div class="btns"><button type="button" class="lnk2" data-sk="now">Бросить с сегодняшнего дня</button><button type="button" class="lnk2" data-sk="edit">Изменить план</button></div></section>`}
-  const nm=MILES.find(m=>m[0]>s.sinceD),pm=[...MILES].reverse().find(m=>m[0]<=s.sinceD),prev=pm?pm[0]:0;
-  return `<section class="card smk" style="--c:var(--health)"><div class="lbl">Без сигарет</div><div class="fbig">${s.streak} ${plural(s.streak,"день","дня","дней")}</div>
+  const nm=SK().M.find(m=>m[0]>s.sinceD),pm=[...SK().M].reverse().find(m=>m[0]<=s.sinceD),prev=pm?pm[0]:0;
+  return `<section class="card smk" style="--c:var(--health)"><div class="lbl">Без ${SK().gen}</div><div class="fbig">${s.streak} ${plural(s.streak,"день","дня","дней")}</div>
     <div class="fsplit"><span>Сэкономлено<b>${rub(s.saved)}</b></span><span>Не выкурено<b>${nf0.format(s.notSm)}</b></span><span>Тяга побеждена<b>${s.cr} ${plural(s.cr,"раз","раза","раз")}</b></span></div>
     ${nm?`<div class="qrow"><span>Дальше: <b>${nm[1]}</b> — ${nm[2]}</span><div class="gbar2"><i style="width:${Math.min(100,(s.sinceD-prev)/(nm[0]-prev)*100).toFixed(1)}%;background:var(--health)"></i></div></div>`:""}
     ${pm?`<p class="note" style="font-size:13px">Уже позади: ${pm[1]} — ${pm[2]}.</p>`:""}
-    ${s.lastSlip&&s.lastSlip>=addD(TODAY,-2)?`<div class="ctx soft">Срыв — не провал и не повод начинать курить снова. ${s.free?`Вы уже ${s.free} ${plural(s.free,"день","дня","дней")} без сигарет с момента отказа. `:""}Следующая сигарета не обязательна — продолжаем.</div>`:""}
+    ${s.lastSlip&&s.lastSlip>=addD(TODAY,-2)?`<div class="ctx soft">Срыв — не провал и не повод начинать курить снова. ${s.free?`Вы уже ${s.free} ${plural(s.free,"день","дня","дней")} без ${SK().gen} с момента отказа. `:""}${SK().k==="stick"?"Следующий стик не обязателен":"Следующая сигарета не обязательна"} — продолжаем.</div>`:""}
     <div class="btns"><button type="button" class="go" data-sk="wave">Тянет закурить</button><button type="button" class="lnk2" data-sk="slip">Сорвался</button>${s.saved>=500?`<button type="button" class="lnk2" data-go="money">Сэкономленное — в снежный ком</button>`:""}</div></section>`}
 function wvTick(){clearInterval(wvI);if(!WV)return;wvI=setInterval(()=>{const l=Math.max(0,WV.st+300e3-Date.now()),t=$("wvT"),b=$("wvB"),r=$("wvR");if(!t){clearInterval(wvI);return}
   t.textContent=Math.floor(l/60e3)+":"+String(Math.floor(l/1e3)%60).padStart(2,"0");const sec=Math.floor((Date.now()-WV.st)/1e3)%10;b.textContent=sec<4?"Вдох…":"Выдох…";
   if(r)r.setAttribute("stroke-dashoffset",2*Math.PI*84*(1-l/300e3));if(l<=0){clearInterval(wvI);b.textContent="Волна прошла"}},250)}
 $("t-today").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+  if(d.skk){skKind=d.skk;const v=[$("skCpd").value,$("skPr").value,$("skQ").value];renderToday();$("skCpd").value=v[0];$("skPr").value=v[1];$("skQ").value=v[2];return}
   if(d.skq){$("skQ").value=d.skq;b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));return}
   if(d.sktg){const D=getDay(TODAY);D.cg=(D.cg||0)+1;D.tg=D.tg||{};D.tg[d.sktg]=(D.tg[d.sktg]||0)+1;setDay(TODAY,D);smkTrigAsk=false;renderToday();toast("Записано. Это данные, а не оценка");return}
   if(!d.sk)return;e.stopPropagation();
   const D=getDay(TODAY);
   if(d.sk==="later"){smkLater=true;renderToday();return}
-  if(d.sk==="setup"){const cpd=Math.round(num($("skCpd").value)),price=num($("skPr").value)||0,q=$("skQ").value;if(!(cpd>0)){$("skCpd").focus();toast("Сколько сигарет в день сейчас?");return}if(!DR.test(q)||q<TODAY){toast("Выберите дату отказа");return}
-    L.smk={quit:q,cpd,price,plan:(L.smk&&L.smk.plan)||{}};saveL();renderToday();party(b,1,css("--health"),q===TODAY?"С сегодняшнего дня без сигарет. Справимся":"План готов. День отказа: "+fmtD(q));return}
-  if(d.sk==="edit"){const old=L.smk;L.smk=null;smkLater=false;renderToday();setTimeout(()=>{if($("skCpd")){$("skCpd").value=old.cpd;$("skPr").value=old.price||"";$("skQ").value=old.quit;L._old=old}},0);return}
-  if(d.sk==="now"){L.smk.quit=TODAY;saveL();{const D=getDay(TODAY);if(D.cg){D.cg=0;setDay(TODAY,D)}}renderToday();party(b,2,null,"С сегодняшнего дня без сигарет");return}
+  if(d.sk==="setup"){const cpd=Math.round(num($("skCpd").value)),price=num($("skPr").value)||0,q=$("skQ").value;if(!(cpd>0)){$("skCpd").focus();toast(skKind==="cig"?"Сколько сигарет в день сейчас?":"Сколько стиков в день сейчас?");return}if(!DR.test(q)||q<TODAY){toast("Выберите дату отказа");return}
+    L.smk={quit:q,cpd,price,kind:skKind,plan:(L.smk&&L.smk.plan)||{}};saveL();renderToday();party(b,1,css("--health"),q===TODAY?"С сегодняшнего дня без "+SK().gen+". Справимся":"План готов. День отказа: "+fmtD(q));return}
+  if(d.sk==="edit"){const old=L.smk;skKind=old.kind||"stick";L.smk=null;smkLater=false;renderToday();setTimeout(()=>{if($("skCpd")){$("skCpd").value=old.cpd;$("skPr").value=old.price||"";$("skQ").value=old.quit;L._old=old}},0);return}
+  if(d.sk==="now"){L.smk.quit=TODAY;saveL();{const D=getDay(TODAY);if(D.cg){D.cg=0;setDay(TODAY,D)}}renderToday();party(b,2,null,"С сегодняшнего дня без "+SK().gen);return}
   if(d.sk==="cig"){smkTrigAsk=true;renderToday();return}
   if(d.sk==="wave"){WV={st:Date.now()};renderToday();wvTick();return}
   if(d.sk==="wvok"){WV=null;clearInterval(wvI);withXp(()=>{D.cr=(D.cr||0)+1;setDay(TODAY,D)},b,css("--health"),"Тяга побеждена, +10. С каждым разом она слабее",1);renderToday();return}
@@ -1313,7 +1318,7 @@ function devBlock(){const R=respect(),W=wheel(),mx=Math.max(1,...Object.values(W
   const books=(L.books||[]).slice().sort((a,b)=>(!!a.done-!!b.done)||(a.t<b.t?-1:1)),learn=(L.learn||[]).slice().sort((a,b)=>a.dt<b.dt?1:-1),ppl=(L.ppl||[]).map(p=>({...p,due:p.last?Math.round((pd(TODAY)-pd(p.last))/864e5)-p.every:999})).sort((a,b)=>b.due-a.due);
   return `<section class="card"><div class="ch"><h2>Уважение к себе</h2><span>сдержанные обещания за 2 недели</span></div>
     <div class="wheel"><div style="--c:var(--yellow)"><span>${R.pct==null?"пока мало данных":Math.round(R.k)+" из "+R.p+" обещаний"}</span><div class="gbar2"><i style="width:${R.pct||0}%"></i></div><b>${R.pct==null?"—":R.pct+"%"}</b></div></div>
-    <p class="note" style="font-size:13px;margin-top:8px">Уважение к себе здесь — доля обещаний себе, которые вы сдержали за 2 недели: главное дело дня, привычки, дни без сигарет. Уверенность растёт из опыта «сказал себе — сделал», а сравнивать полезнее с собой прошлым, чем с другими.</p></section>
+    <p class="note" style="font-size:13px;margin-top:8px">Уважение к себе здесь — доля обещаний себе, которые вы сдержали за 2 недели: главное дело дня, привычки, дни без курения. Уверенность растёт из опыта «сказал себе — сделал», а сравнивать полезнее с собой прошлым, чем с другими.</p></section>
   <section class="card"><div class="ch"><h2>Книги</h2><span>${books.filter(b=>b.done).length} прочитано</span></div>
     <div class="list" style="margin-top:6px">${books.map(b=>{const a=AN(b.pr),p=b.tot?Math.min(1,b.pg/b.tot):0;return `<div class="goal${b.done?" done":""}" style="--c:var(${a.c})"><div class="gh"><span class="gt">${esc(b.t)}${b.au?`<small class="note" style="font-size:13px"> · ${esc(b.au)}</small>`:""}</span>${b.done?"":`<span class="step2"><button type="button" data-bkp="${b.id}" aria-label="Плюс 10 страниц">+10</button></span>`}<button type="button" class="x" data-bkx="${b.id}">×</button></div>
       <div class="gbar2"><i style="width:${(p*100).toFixed(1)}%"></i></div><div class="gm">${a.n} · ${b.done?"прочитана "+fmtD(b.done):b.pg+" из "+b.tot+" стр."}</div></div>`}).join("")||`<p class="note" style="margin:8px 0">Добавьте книги, которые читаете: по психологии, финансам, геологии.</p>`}</div>
