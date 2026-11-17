@@ -760,7 +760,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
       </div>
 
       <div class="tiles">
-        <div class="tile"><span class="k">Портфель со свободными на счёте</span><span class="big">${rub(P.acct)}</span><span class="t num">${P.cashH ? `всего с наличными ${rub(P.all)} · ` : ""}вложено ${rub(P.cost)}${P.noAvg ? ` · без средней цены: ${P.noAvg}` : ""}</span></div>
+        <div class="tile"><span class="k">Портфель</span><span class="big">${rub(P.acct)}</span><span class="t num">${P.cashB ? "со свободными на счёте · " : ""}${P.cashH ? `с наличными ${rub(P.all)} · ` : ""}вложено ${rub(P.cost)}${P.noAvg ? ` · без средней цены: ${P.noAvg}` : ""}</span></div>
         <div class="tile ${P.day > 0 ? "good" : P.day < 0 ? "bad" : ""}"><span class="k">За день</span><span class="v ${cls(P.day)}">${srub(P.day)}</span><span class="t num">${spct(dayPct)}</span></div>
         <div class="tile ${P.valKnown - P.cost > 0 ? "good" : P.valKnown - P.cost < 0 ? "bad" : ""}"><span class="k">Прибыль</span><span class="v ${cls(P.valKnown - P.cost)}">${P.cost ? srub(P.valKnown - P.cost) : "—"}</span><span class="t num">${P.cost ? spct((P.valKnown - P.cost) / P.cost) + (P.noAvg ? " · по бумагам со средней ценой" : "") : "впишите средние цены"}</span></div>
         <div class="tile"><span class="k">Дивиденды за 12 мес</span><span class="v">${rub(P.past)}</span><span class="t num">впереди за 12 мес ≈ ${rub(P.fwd)} · после НДФЛ 13 %</span></div>
