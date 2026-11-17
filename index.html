@@ -351,11 +351,12 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
 
   // Записи вводятся вручную и хранятся в закрытом репозитории (planner.json); котировки и дивиденды кладёт робот GitHub в market.json
   let holdings = [];
+  let cash = { broker: null, hand: null };
   let quotes = null;
   const money = {};
   let sha = null, gen = 0, pushing = false, again = false;
   const isBlankDay = d => !d || (!d.tasks.length && !d.top.some(x => x.t || x.d) && !Object.values(d.habits).some(Boolean) && d.englishMin == null && d.funMin == null && !d.energy && !d.mood && !d.win && !d.lesson && !d.blocker && !d.note);
-  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
+  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, cash, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
   const lsSave = () => { try { localStorage.setItem(LS, JSON.stringify({ ...snapshot(), quotes, sha, dirty: [...dirty] })); return true; } catch { return false; } };
   const lsLoad = () => { try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } };
   const normHold = items => Array.isArray(items) ? items.filter(h => h && typeof h.secid === "string").map(h => ({ secid: h.secid, kind: ["share", "bond", "gold"].includes(h.kind) ? h.kind : "share", qty: Number.isFinite(h.qty) ? h.qty : null, avg: Number.isFinite(h.avg) ? h.avg : null })) : [];
@@ -364,6 +365,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     if (!data || typeof data !== "object") return;
     Object.entries(data.days || {}).forEach(([k, v]) => { if (!dirty.has("days/" + k)) days[k] = norm(k, v); });
     if (!dirty.has("portfolio/holdings") && Array.isArray(data.holdings)) holdings = normHold(data.holdings);
+    if (!dirty.has("cash") && data.cash && typeof data.cash === "object") cash = { broker: Number.isFinite(data.cash.broker) ? data.cash.broker : null, hand: Number.isFinite(data.cash.hand) ? data.cash.hand : null };
     Object.entries(data.money || {}).forEach(([k, v]) => { if (!dirty.has("money/" + k)) money[k] = normMon(k, v); });
   }
 
@@ -726,7 +728,9 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     const past = rows.reduce((a, r) => a + r.qty * r.dv.past, 0) * TAX;
     const fwd = rows.reduce((a, r) => a + r.qty * r.dv.fwd, 0) * TAX;
     const upcoming = rows.filter(r => r.qty > 0).flatMap(r => r.dv.next.map(x => ({ ...x, secid: r.h.secid, name: r.q?.n || r.h.secid, qty: r.qty }))).sort((a, b) => a.r < b.r ? -1 : 1).slice(0, 8);
-    return { rows, val, cost, valKnown, noAvg, day, past, fwd, upcoming };
+    const cashB = Number(cash.broker) || 0, cashH = Number(cash.hand) || 0;
+    const acct = val + cashB, all = acct + cashH;
+    return { rows, val, cost, valKnown, noAvg, day, past, fwd, upcoming, cashB, cashH, acct, all };
   }
 
   function renderMoney() {
@@ -735,7 +739,9 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     const stale = upd ? (Date.now() - upd) > 3 * 864e5 : true;
     const updText = upd ? new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(upd) : null;
     const dayPct = P.val - P.day ? P.day / (P.val - P.day) : 0;
-    const withVal = P.rows.filter(r => r.val > 0).sort((a, b) => b.val - a.val);
+    const withVal = P.rows.filter(r => r.val > 0).sort((a, b) => b.val - a.val).map(r => ({ label: r.h.kind === "gold" ? "Золото" : r.h.secid, val: r.val }));
+    if (P.cashB > 0) withVal.push({ label: "На счёте", val: P.cashB, c: "var(--muted)" });
+    if (P.cashH > 0) withVal.push({ label: "Наличные", val: P.cashH, c: "var(--line)" });
     const m = mon(monthOf);
     const I = m.inc.reduce((a, x) => a + (Number(x.a) || 0), 0);
     const E = EXP.reduce((a, c) => a + (Number(m.exp[c]) || 0), 0);
@@ -754,7 +760,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
       </div>
 
       <div class="tiles">
-        <div class="tile"><span class="k">Портфель</span><span class="big">${rub(P.val)}</span><span class="t num">вложено ${rub(P.cost)}${P.noAvg ? ` · без средней цены: ${P.noAvg}` : ""}</span></div>
+        <div class="tile"><span class="k">Портфель со свободными на счёте</span><span class="big">${rub(P.acct)}</span><span class="t num">${P.cashH ? `всего с наличными ${rub(P.all)} · ` : ""}вложено ${rub(P.cost)}${P.noAvg ? ` · без средней цены: ${P.noAvg}` : ""}</span></div>
         <div class="tile ${P.day > 0 ? "good" : P.day < 0 ? "bad" : ""}"><span class="k">За день</span><span class="v ${cls(P.day)}">${srub(P.day)}</span><span class="t num">${spct(dayPct)}</span></div>
         <div class="tile ${P.valKnown - P.cost > 0 ? "good" : P.valKnown - P.cost < 0 ? "bad" : ""}"><span class="k">Прибыль</span><span class="v ${cls(P.valKnown - P.cost)}">${P.cost ? srub(P.valKnown - P.cost) : "—"}</span><span class="t num">${P.cost ? spct((P.valKnown - P.cost) / P.cost) + (P.noAvg ? " · по бумагам со средней ценой" : "") : "впишите средние цены"}</span></div>
         <div class="tile"><span class="k">Дивиденды за 12 мес</span><span class="v">${rub(P.past)}</span><span class="t num">впереди за 12 мес ≈ ${rub(P.fwd)} · после НДФЛ 13 %</span></div>
@@ -762,8 +768,8 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
 
       <section class="card" aria-labelledby="h-pf">
         <div class="card-h"><h3 id="h-pf">Портфель</h3><span class="meta">вы вводите количество и среднюю цену, остальное считается само</span></div>
-        ${withVal.length ? `<div class="alloc" aria-hidden="true">${withVal.map((r, i) => `<i style="width:${(r.val / P.val * 100).toFixed(2)}%;background:${PAL[i % PAL.length]}"></i>`).join("")}</div>
-        <div class="alloc-legend">${withVal.map((r, i) => `<span><i style="background:${PAL[i % PAL.length]}"></i>${esc(r.h.kind === "gold" ? "Золото" : r.h.secid)} ${nf(r.val / P.val * 100, 1)} %</span>`).join("")}</div>` : ""}
+        ${withVal.length ? `<div class="alloc" aria-hidden="true">${withVal.map((r, i) => `<i style="width:${(r.val / P.all * 100).toFixed(2)}%;background:${r.c || PAL[i % PAL.length]}"></i>`).join("")}</div>
+        <div class="alloc-legend">${withVal.map((r, i) => `<span><i style="background:${r.c || PAL[i % PAL.length]}"></i>${esc(r.label)} ${nf(r.val / P.all * 100, 1)} %</span>`).join("")}</div>` : ""}
         <div class="tablewrap">
           <table class="pf">
             <thead><tr><th>Актив</th><th>Кол-во</th><th>Средняя, ₽</th><th>Цена, ₽</th><th>Сегодня</th><th>Стоимость</th><th>Доля</th><th>Прибыль</th><th>Див. доходн.</th><th></th></tr></thead>
@@ -777,12 +783,16 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
                 <td>${r.p != null ? nf(r.p, r.p < 100 ? 2 : r.p < 1000 ? 2 : 0) : "—"}</td>
                 <td class="${cls(chg)}">${spct(chg)}</td>
                 <td>${rub(r.val)}</td>
-                <td>${r.val && P.val ? nf(r.val / P.val * 100, 1) + " %" : "—"}</td>
+                <td>${r.val && P.all ? nf(r.val / P.all * 100, 1) + " %" : "—"}</td>
                 <td class="${cls(r.pnl)}">${r.cost && r.pnl != null ? spct(r.pnl / r.cost) : "—"}</td>
                 <td>${dy ? nf(dy * 100, 1) + " %" : "—"}</td>
                 <td><button class="icon" data-act="h-del" data-i="${r.i}" aria-label="Удалить ${esc(r.h.secid)}">✕</button></td>
-              </tr>`; }).join("")}</tbody>
-            <tfoot><tr><td>Итого</td><td></td><td></td><td></td><td class="${cls(P.day)}">${spct(dayPct)}</td><td>${rub(P.val)}</td><td>100 %</td><td class="${cls(P.valKnown - P.cost)}">${P.cost ? spct((P.valKnown - P.cost) / P.cost) : "—"}</td><td>${P.val && P.fwd ? nf(P.fwd / TAX / P.val * 100, 1) + " %" : "—"}</td><td></td></tr></tfoot>
+              </tr>`; }).join("")}
+              ${[["broker", "На счёте", "свободные деньги у брокера", P.cashB], ["hand", "Наличные", "вне брокерского счёта", P.cashH]].map(([k, t, s, v]) => `<tr>
+                <td><span class="tk">${t}</span><span class="nm">${s}</span></td>
+                <td colspan="2"><input type="number" inputmode="decimal" min="0" step="any" id="cash-${k}" data-cash="${k}" value="${cash[k] ?? ""}" placeholder="сумма, ₽" style="width:176px" aria-label="${t}, рублей"></td>
+                <td>—</td><td>—</td><td>${v ? rub(v) : "—"}</td><td>${v && P.all ? nf(v / P.all * 100, 1) + " %" : "—"}</td><td>—</td><td>—</td><td></td></tr>`).join("")}</tbody>
+            <tfoot><tr><td>Итого</td><td></td><td></td><td></td><td class="${cls(P.day)}">${spct(dayPct)}</td><td>${rub(P.all)}</td><td>100 %</td><td class="${cls(P.valKnown - P.cost)}">${P.cost ? spct((P.valKnown - P.cost) / P.cost) : "—"}</td><td>${P.val && P.fwd ? nf(P.fwd / TAX / P.val * 100, 1) + " %" : "—"}</td><td></td></tr></tfoot>
           </table>
         </div>
         <form class="addrow" data-form="hold">
@@ -928,7 +938,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     if (el.dataset.habit) { d.habits[el.dataset.habit] = el.checked; save(cur); render(); }
     else if (el.dataset.taskCheck) { const t = d.tasks.find(x => x.id === el.dataset.taskCheck); if (t) { t.done = el.checked; save(cur); render(); } }
     else if (el.dataset.topCheck != null) { d.top[+el.dataset.topCheck].d = el.checked; save(cur); render(); }
-    else if (el.dataset.hf || el.dataset.incA || el.dataset.exp || el.dataset.inv) { setTimeout(() => { if (!typing()) render(); else pendingRender = true; }, 0); }
+    else if (el.dataset.hf || el.dataset.cash || el.dataset.incA || el.dataset.exp || el.dataset.inv) { setTimeout(() => { if (!typing()) render(); else pendingRender = true; }, 0); }
   });
 
   view.addEventListener("input", e => {
@@ -941,6 +951,11 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
       if (k === "englishMin" && d[k] != null) setHabit("english", d[k] >= 45);
       if (k === "funMin" && d[k] != null) setHabit("screen", d[k] <= 45);
       save(cur);
+    }
+    else if (el.dataset.cash) {
+      const v = el.value === "" ? null : Number(el.value);
+      cash[el.dataset.cash] = Number.isFinite(v) && v >= 0 ? v : null;
+      savePath("cash");
     }
     else if (el.dataset.hf) {
       const h = holdings[+el.dataset.i]; if (!h) return;
