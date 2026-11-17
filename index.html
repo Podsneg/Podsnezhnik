@@ -352,11 +352,12 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
   // Записи вводятся вручную и хранятся в закрытом репозитории (planner.json); котировки и дивиденды кладёт робот GitHub в market.json
   let holdings = [];
   let cash = { broker: null, hand: null };
+  let gold = { g: null, avg: null };
   let quotes = null;
   const money = {};
   let sha = null, gen = 0, pushing = false, again = false;
   const isBlankDay = d => !d || (!d.tasks.length && !d.top.some(x => x.t || x.d) && !Object.values(d.habits).some(Boolean) && d.englishMin == null && d.funMin == null && !d.energy && !d.mood && !d.win && !d.lesson && !d.blocker && !d.note);
-  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, cash, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
+  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, cash, gold, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
   const lsSave = () => { try { localStorage.setItem(LS, JSON.stringify({ ...snapshot(), quotes, sha, dirty: [...dirty] })); return true; } catch { return false; } };
   const lsLoad = () => { try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } };
   const normHold = items => Array.isArray(items) ? items.filter(h => h && typeof h.secid === "string").map(h => ({ secid: h.secid, kind: ["share", "bond", "gold"].includes(h.kind) ? h.kind : "share", qty: Number.isFinite(h.qty) ? h.qty : null, avg: Number.isFinite(h.avg) ? h.avg : null })) : [];
@@ -365,6 +366,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     if (!data || typeof data !== "object") return;
     Object.entries(data.days || {}).forEach(([k, v]) => { if (!dirty.has("days/" + k)) days[k] = norm(k, v); });
     if (!dirty.has("portfolio/holdings") && Array.isArray(data.holdings)) holdings = normHold(data.holdings);
+    if (!dirty.has("gold") && data.gold && typeof data.gold === "object") gold = { g: Number.isFinite(data.gold.g) ? data.gold.g : null, avg: Number.isFinite(data.gold.avg) ? data.gold.avg : null };
     if (!dirty.has("cash") && data.cash && typeof data.cash === "object") cash = { broker: Number.isFinite(data.cash.broker) ? data.cash.broker : null, hand: Number.isFinite(data.cash.hand) ? data.cash.hand : null };
     Object.entries(data.money || {}).forEach(([k, v]) => { if (!dirty.has("money/" + k)) money[k] = normMon(k, v); });
   }
@@ -435,8 +437,8 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
   }
   async function livePrices() {
     const tk = [...new Set(holdings.filter(h => h.kind === "share").map(h => h.secid))];
-    const gold = holdings.some(h => h.kind === "gold");
-    if (!tk.length && !gold) return;
+    const hasGold = (Number(gold.g) || 0) > 0;
+    if (!tk.length && !hasGold) return;
     try {
       const rows = b => b.data.map(r => Object.fromEntries(b.columns.map((c, i) => [c, r[i]])));
       const q = {};
@@ -445,7 +447,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
         const md = Object.fromEntries(rows(x.marketdata).map(r => [r.SECID, r]));
         for (const s of rows(x.securities)) { const m = md[s.SECID] || {}; const p = m.LAST ?? m.LCURRENTPRICE ?? m.MARKETPRICE ?? s.PREVPRICE; if (p > 0) q[s.SECID] = { n: s.SHORTNAME, p, pc: s.PREVPRICE, k: "share" }; }
       }
-      if (gold) {
+      if (hasGold) {
         const g = await (await tfetch(`${ISS}/engines/currency/markets/selt/boards/CETS/securities/GLDRUB_TOM.json?iss.meta=off&iss.only=securities,marketdata&securities.columns=SECID,PREVPRICE&marketdata.columns=SECID,LAST`, { cache: "no-store" })).json();
         const gs = rows(g.securities)[0], gm = rows(g.marketdata)[0] || {};
         if (gs) q.GLDRUB_TOM = { n: "Золото, 1 г", p: gm.LAST ?? gs.PREVPRICE, pc: gs.PREVPRICE, k: "gold" };
@@ -683,7 +685,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
   }
 
   // ---------- Финансы ----------
-  const KINDS = { share: "Акция или фонд", bond: "Облигация", gold: "Золото в слитках, г" };
+  const KINDS = { share: "Акция или фонд", bond: "Облигация" };
   const EXP = ["Жильё", "Еда", "Транспорт", "Связь и подписки", "Здоровье", "Одежда", "Развлечения", "Прочее"];
   const PAL = ["var(--accent)", "#4b7fb3", "#c08a2e", "#8a5fb0", "#3f9c9a", "#b45a6e", "#6f8a3a", "#7a7f86", "#a0603a", "#4a6a8a", "#9a8a3a", "#5a5aa0"];
   const nf = (v, dp = 0) => new Intl.NumberFormat("ru-RU", { minimumFractionDigits: dp, maximumFractionDigits: dp }).format(v);
@@ -713,7 +715,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
   }
   function portfolio() {
     const t = todayIso();
-    const rows = holdings.map((h, i) => {
+    const rows = holdings.map((h, i) => [h, i]).filter(([h]) => h.kind !== "gold").map(([h, i]) => {
       const q = quoteFor(h), qty = Number(h.qty) || 0, avg = Number.isFinite(h.avg) && h.avg > 0 ? h.avg : null;
       const p = q?.p ?? null, pc = q?.pc ?? null;
       const val = p != null ? qty * p : null, cost = avg != null ? qty * avg : null;
@@ -729,8 +731,13 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     const fwd = rows.reduce((a, r) => a + r.qty * r.dv.fwd, 0) * TAX;
     const upcoming = rows.filter(r => r.qty > 0).flatMap(r => r.dv.next.map(x => ({ ...x, secid: r.h.secid, name: r.q?.n || r.h.secid, qty: r.qty }))).sort((a, b) => a.r < b.r ? -1 : 1).slice(0, 8);
     const cashB = Number(cash.broker) || 0, cashH = Number(cash.hand) || 0;
-    const acct = val + cashB, all = acct + cashH;
-    return { rows, val, cost, valKnown, noAvg, day, past, fwd, upcoming, cashB, cashH, acct, all };
+    const acct = val + cashB;
+    const gq = quotes?.q?.GLDRUB_TOM, gg = Number(gold.g) || 0, gavg = Number(gold.avg) > 0 ? Number(gold.avg) : null;
+    const G = { g: gg, p: gq?.p ?? null, pc: gq?.pc ?? null };
+    G.val = G.p != null ? gg * G.p : null; G.cost = gavg != null ? gg * gavg : null;
+    G.pnl = G.val != null && G.cost != null ? G.val - G.cost : null; G.day = G.p != null && G.pc ? gg * (G.p - G.pc) : 0;
+    const outside = cashH + (G.val || 0);
+    return { rows, val, cost, valKnown, noAvg, day, past, fwd, upcoming, cashB, cashH, acct, G, outside, all: acct + outside };
   }
 
   function renderMoney() {
@@ -741,7 +748,6 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     const dayPct = P.val - P.day ? P.day / (P.val - P.day) : 0;
     const withVal = P.rows.filter(r => r.val > 0).sort((a, b) => b.val - a.val).map(r => ({ label: r.h.kind === "gold" ? "Золото" : r.h.secid, val: r.val }));
     if (P.cashB > 0) withVal.push({ label: "На счёте", val: P.cashB, c: "var(--muted)" });
-    if (P.cashH > 0) withVal.push({ label: "Наличные", val: P.cashH, c: "var(--line)" });
     const m = mon(monthOf);
     const I = m.inc.reduce((a, x) => a + (Number(x.a) || 0), 0);
     const E = EXP.reduce((a, c) => a + (Number(m.exp[c]) || 0), 0);
@@ -760,7 +766,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
       </div>
 
       <div class="tiles">
-        <div class="tile"><span class="k">Портфель</span><span class="big">${rub(P.acct)}</span><span class="t num">${P.cashB ? "со свободными на счёте · " : ""}${P.cashH ? `с наличными ${rub(P.all)} · ` : ""}вложено ${rub(P.cost)}${P.noAvg ? ` · без средней цены: ${P.noAvg}` : ""}</span></div>
+        <div class="tile"><span class="k">Портфель</span><span class="big">${rub(P.acct)}</span><span class="t num">${P.cashB ? "со свободными на счёте · " : ""}вложено ${rub(P.cost)}${P.noAvg ? ` · без средней цены: ${P.noAvg}` : ""}</span></div>
         <div class="tile ${P.day > 0 ? "good" : P.day < 0 ? "bad" : ""}"><span class="k">За день</span><span class="v ${cls(P.day)}">${srub(P.day)}</span><span class="t num">${spct(dayPct)}</span></div>
         <div class="tile ${P.valKnown - P.cost > 0 ? "good" : P.valKnown - P.cost < 0 ? "bad" : ""}"><span class="k">Прибыль</span><span class="v ${cls(P.valKnown - P.cost)}">${P.cost ? srub(P.valKnown - P.cost) : "—"}</span><span class="t num">${P.cost ? spct((P.valKnown - P.cost) / P.cost) + (P.noAvg ? " · по бумагам со средней ценой" : "") : "впишите средние цены"}</span></div>
         <div class="tile"><span class="k">Дивиденды за 12 мес</span><span class="v">${rub(P.past)}</span><span class="t num">впереди за 12 мес ≈ ${rub(P.fwd)} · после НДФЛ 13 %</span></div>
@@ -768,8 +774,8 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
 
       <section class="card" aria-labelledby="h-pf">
         <div class="card-h"><h3 id="h-pf">Портфель</h3><span class="meta">вы вводите количество и среднюю цену, остальное считается само</span></div>
-        ${withVal.length ? `<div class="alloc" aria-hidden="true">${withVal.map((r, i) => `<i style="width:${(r.val / P.all * 100).toFixed(2)}%;background:${r.c || PAL[i % PAL.length]}"></i>`).join("")}</div>
-        <div class="alloc-legend">${withVal.map((r, i) => `<span><i style="background:${r.c || PAL[i % PAL.length]}"></i>${esc(r.label)} ${nf(r.val / P.all * 100, 1)} %</span>`).join("")}</div>` : ""}
+        ${withVal.length ? `<div class="alloc" aria-hidden="true">${withVal.map((r, i) => `<i style="width:${(r.val / P.acct * 100).toFixed(2)}%;background:${r.c || PAL[i % PAL.length]}"></i>`).join("")}</div>
+        <div class="alloc-legend">${withVal.map((r, i) => `<span><i style="background:${r.c || PAL[i % PAL.length]}"></i>${esc(r.label)} ${nf(r.val / P.acct * 100, 1)} %</span>`).join("")}</div>` : ""}
         <div class="tablewrap">
           <table class="pf">
             <thead><tr><th>Актив</th><th>Кол-во</th><th>Средняя, ₽</th><th>Цена, ₽</th><th>Сегодня</th><th>Стоимость</th><th>Доля</th><th>Прибыль</th><th>Див. доходн.</th><th></th></tr></thead>
@@ -783,16 +789,16 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
                 <td>${r.p != null ? nf(r.p, r.p < 100 ? 2 : r.p < 1000 ? 2 : 0) : "—"}</td>
                 <td class="${cls(chg)}">${spct(chg)}</td>
                 <td>${rub(r.val)}</td>
-                <td>${r.val && P.all ? nf(r.val / P.all * 100, 1) + " %" : "—"}</td>
+                <td>${r.val && P.acct ? nf(r.val / P.acct * 100, 1) + " %" : "—"}</td>
                 <td class="${cls(r.pnl)}">${r.cost && r.pnl != null ? spct(r.pnl / r.cost) : "—"}</td>
                 <td>${dy ? nf(dy * 100, 1) + " %" : "—"}</td>
                 <td><button class="icon" data-act="h-del" data-i="${r.i}" aria-label="Удалить ${esc(r.h.secid)}">✕</button></td>
               </tr>`; }).join("")}
-              ${[["broker", "На счёте", "свободные деньги у брокера", P.cashB], ["hand", "Наличные", "вне брокерского счёта", P.cashH]].map(([k, t, s, v]) => `<tr>
+              ${[["broker", "На счёте", "свободные деньги у брокера", P.cashB]].map(([k, t, s, v]) => `<tr>
                 <td><span class="tk">${t}</span><span class="nm">${s}</span></td>
                 <td colspan="2"><input type="number" inputmode="decimal" min="0" step="any" id="cash-${k}" data-cash="${k}" value="${cash[k] ?? ""}" placeholder="сумма, ₽" style="width:176px" aria-label="${t}, рублей"></td>
-                <td>—</td><td>—</td><td>${v ? rub(v) : "—"}</td><td>${v && P.all ? nf(v / P.all * 100, 1) + " %" : "—"}</td><td>—</td><td>—</td><td></td></tr>`).join("")}</tbody>
-            <tfoot><tr><td>Итого</td><td></td><td></td><td></td><td class="${cls(P.day)}">${spct(dayPct)}</td><td>${rub(P.all)}</td><td>100 %</td><td class="${cls(P.valKnown - P.cost)}">${P.cost ? spct((P.valKnown - P.cost) / P.cost) : "—"}</td><td>${P.val && P.fwd ? nf(P.fwd / TAX / P.val * 100, 1) + " %" : "—"}</td><td></td></tr></tfoot>
+                <td>—</td><td>—</td><td>${v ? rub(v) : "—"}</td><td>${v && P.acct ? nf(v / P.acct * 100, 1) + " %" : "—"}</td><td>—</td><td>—</td><td></td></tr>`).join("")}</tbody>
+            <tfoot><tr><td>Итого</td><td></td><td></td><td></td><td class="${cls(P.day)}">${spct(dayPct)}</td><td>${rub(P.acct)}</td><td>100 %</td><td class="${cls(P.valKnown - P.cost)}">${P.cost ? spct((P.valKnown - P.cost) / P.cost) : "—"}</td><td>${P.val && P.fwd ? nf(P.fwd / TAX / P.val * 100, 1) + " %" : "—"}</td><td></td></tr></tfoot>
           </table>
         </div>
         <form class="addrow" data-form="hold">
@@ -801,6 +807,28 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
           <button class="btn" type="submit">Добавить актив</button>
         </form>
         <p class="hint">Цены новых активов появятся после следующего обновления. Доходность дивидендов считается по ожидаемым выплатам на 12 месяцев вперёд до налога.</p>
+      </section>
+
+      <section class="card" aria-labelledby="h-out">
+        <div class="card-h"><h3 id="h-out">Наличные и золото</h3><span class="meta num">вне портфеля · ${rub(P.outside)}</span></div>
+        <div class="tablewrap">
+          <table class="pf" style="min-width:600px">
+            <thead><tr><th>Актив</th><th>Количество</th><th>Средняя, ₽</th><th>Цена, ₽</th><th>Сегодня</th><th>Стоимость</th><th>Прибыль</th></tr></thead>
+            <tbody>
+              <tr><td><span class="tk">Наличные</span><span class="nm">рубли вне брокерского счёта</span></td>
+                <td colspan="2"><input type="number" inputmode="decimal" min="0" step="any" id="cash-hand" data-cash="hand" value="${cash.hand ?? ""}" placeholder="сумма, ₽" style="width:176px" aria-label="Наличные, рублей"></td>
+                <td>—</td><td>—</td><td>${P.cashH ? rub(P.cashH) : "—"}</td><td>—</td></tr>
+              <tr><td><span class="tk">Золото</span><span class="nm">слитки, граммы · цена биржи за 1 г</span></td>
+                <td><input class="qty" type="number" inputmode="decimal" min="0" step="any" id="gold-g" data-gold="g" value="${gold.g ?? ""}" placeholder="г" aria-label="Золото, граммов"></td>
+                <td><input type="number" inputmode="decimal" min="0" step="any" id="gold-avg" data-gold="avg" value="${gold.avg ?? ""}" placeholder="за 1 г" aria-label="Средняя цена грамма"></td>
+                <td>${P.G.p != null ? nf(P.G.p) : "—"}</td>
+                <td class="${cls(P.G.p != null && P.G.pc ? P.G.p - P.G.pc : 0)}">${P.G.p != null && P.G.pc ? spct((P.G.p - P.G.pc) / P.G.pc) : "—"}</td>
+                <td>${P.G.g ? rub(P.G.val) : "—"}</td>
+                <td class="${cls(P.G.pnl)}">${P.G.pnl != null && P.G.cost ? spct(P.G.pnl / P.G.cost) : "—"}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint num">Весь капитал: портфель ${rub(P.acct)} + наличные и золото ${rub(P.outside)} = <b>${rub(P.all)}</b>. Золото оценено по биржевой цене грамма, при продаже банк даст меньше.</p>
       </section>
 
       <div class="grid">
@@ -938,7 +966,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     if (el.dataset.habit) { d.habits[el.dataset.habit] = el.checked; save(cur); render(); }
     else if (el.dataset.taskCheck) { const t = d.tasks.find(x => x.id === el.dataset.taskCheck); if (t) { t.done = el.checked; save(cur); render(); } }
     else if (el.dataset.topCheck != null) { d.top[+el.dataset.topCheck].d = el.checked; save(cur); render(); }
-    else if (el.dataset.hf || el.dataset.cash || el.dataset.incA || el.dataset.exp || el.dataset.inv) { setTimeout(() => { if (!typing()) render(); else pendingRender = true; }, 0); }
+    else if (el.dataset.hf || el.dataset.cash || el.dataset.gold || el.dataset.incA || el.dataset.exp || el.dataset.inv) { setTimeout(() => { if (!typing()) render(); else pendingRender = true; }, 0); }
   });
 
   view.addEventListener("input", e => {
@@ -951,6 +979,12 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
       if (k === "englishMin" && d[k] != null) setHabit("english", d[k] >= 45);
       if (k === "funMin" && d[k] != null) setHabit("screen", d[k] <= 45);
       save(cur);
+    }
+    else if (el.dataset.gold) {
+      const v = el.value === "" ? null : Number(el.value);
+      gold[el.dataset.gold] = Number.isFinite(v) && v >= 0 ? v : null;
+      savePath("gold");
+      if (el.dataset.gold === "g" && gold.g > 0 && !quotes?.q?.GLDRUB_TOM) livePrices();
     }
     else if (el.dataset.cash) {
       const v = el.value === "" ? null : Number(el.value);
