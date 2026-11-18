@@ -241,6 +241,78 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
 .banner { padding: 10px 14px; border-radius: 10px; background: var(--warn-soft); font-size: 13.5px; }
 [hidden] { display: none !important; }
 
+/* Цели дохода: кнопка в шапке финансов открывает окно-лесенку уровней */
+.ig-btn { display: inline-flex; align-items: center; gap: 8px; }
+.ig-btn svg { width: 16px; height: 16px; flex: none; }
+.ig-btn .ig-mini { font-size: 12px; color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; padding-left: 8px; border-left: 1px solid var(--line); }
+dialog.ig { border: 1px solid var(--line); border-radius: 18px; padding: 0; width: min(680px, calc(100% - 32px)); max-height: min(90vh, 920px); background: var(--bg); color: var(--ink); box-shadow: 0 24px 60px rgba(10, 20, 16, .25); }
+dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2px); }
+.ig-in { padding: 20px; display: grid; gap: 16px; }
+.ig-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.ig-head h2 { font-family: var(--font-display); font-weight: 500; font-size: 22px; letter-spacing: -0.015em; }
+.ig-head .sub { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+.ig-now { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.ig-now .tile { padding: 12px 14px; }
+.ig-now .tile .v { font-size: 20px; }
+.ig-track { position: relative; height: 54px; margin: 4px 10px 0; }
+.ig-track .ln { position: absolute; left: 0; right: 0; top: 14px; height: 6px; border-radius: 999px; background: var(--line); }
+.ig-track .fill { position: absolute; left: 0; top: 14px; height: 6px; border-radius: 999px; background: var(--accent); }
+.ig-track .mk { position: absolute; top: 9px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--surface); border: 2px solid var(--line); padding: 0; cursor: pointer; }
+.ig-track .mk.ok { background: var(--accent); border-color: var(--accent); }
+.ig-track .mk.cur { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.ig-track .lb { position: absolute; top: 32px; transform: translateX(-50%); font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ig-track .lb.ok { color: var(--accent); font-weight: 600; }
+.ig-track .you { position: absolute; top: -6px; width: 2px; height: 32px; margin-left: -1px; background: var(--ink); border-radius: 2px; }
+.ig-track .you::after { content: attr(data-t); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; white-space: nowrap; background: var(--ink); color: var(--surface); padding: 1px 6px; border-radius: 6px; margin-bottom: 2px; }
+.ig-ctl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+.ig-ctl .scale .lbl b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.ig-ctl input[type="range"] { width: 100%; accent-color: var(--accent); margin: 6px 0 0; }
+.ig-list { display: grid; gap: 8px; }
+.ig-lv { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.ig-lv.ok { border-color: transparent; background: var(--accent-soft); }
+.ig-lv.cur { border-color: var(--accent); }
+.ig-lv > button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: 28px 1fr auto; gap: 6px 12px; align-items: center; padding: 12px 14px; }
+.ig-lv > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 12px; }
+.ig-lv .ck { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-content: center; font-size: 12px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ig-lv.ok .ck { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.ig-lv.cur .ck { border-color: var(--accent); color: var(--accent); }
+.ig-lv .amt { font-family: var(--font-display); font-weight: 500; font-size: 17px; font-variant-numeric: tabular-nums; }
+.ig-lv .amt small { font-family: var(--font-body); font-size: 12.5px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+.ig-lv .pc { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.ig-lv.ok .pc { color: var(--accent); font-weight: 600; }
+.ig-lv .bar { grid-column: 2 / 4; height: 6px; background: var(--bg); }
+.ig-lv.ok .bar { background: var(--surface); }
+.ig-lv .bar i.pas { background: var(--warn); }
+.ig-lv .bars { grid-column: 2 / 4; display: grid; gap: 4px; }
+.ig-lv .bars .bar { grid-column: auto; }
+.ig-det { padding: 0 14px 14px 54px; display: grid; gap: 10px; }
+.ig-det .row3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.ig-det .st { background: var(--bg); border-radius: 10px; padding: 9px 11px; display: grid; gap: 2px; }
+.ig-lv.ok .ig-det .st { background: var(--surface); }
+.ig-det .st .k { font-size: 12px; color: var(--muted); }
+.ig-det .st .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ig-det .st .t { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ig-det .foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ig-add { display: flex; gap: 8px; flex-wrap: wrap; }
+.ig-add input { flex: 1; min-width: 140px; border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; background: var(--surface); text-align: right; font-variant-numeric: tabular-nums; }
+.ig-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.ig-quick button { border: 1px dashed var(--line); background: transparent; border-radius: 999px; padding: 4px 10px; font-size: 12.5px; color: var(--muted); cursor: pointer; font-variant-numeric: tabular-nums; }
+.ig-quick button:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 520px) {
+  .ig-in { padding: 16px; }
+  .ig-ctl { grid-template-columns: 1fr; }
+  .ig-det { padding-left: 14px; }
+  .ig-lv .amt small { display: none; }
+  .ig-now { grid-template-columns: 1fr 1fr; }
+  .ig-now .tile:last-child { grid-column: 1 / -1; }
+  .ig-track .lb:nth-of-type(even) { top: 46px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  dialog.ig[open] { animation: igIn .22s ease; }
+  @keyframes igIn { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+  .ig-track .fill, .ig-track .you { transition: width .4s ease, left .4s ease; }
+}
+
 @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
 @media (max-width: 420px) {
   .wrap { padding: 16px 16px 40px; }
@@ -277,6 +349,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
   <div class="banner" id="banner" hidden></div>
   <main id="view"></main>
 </div>
+<dialog class="ig" id="ig" aria-labelledby="ig-h"><div class="ig-in" id="ig-in"></div></dialog>
 
 <script>
 (() => {
@@ -354,10 +427,12 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
   let cash = { broker: null, hand: null };
   let gold = { g: null, avg: null };
   let quotes = null;
+  const IG_DEF = [100000, 200000, 300000, 500000, 750000, 1000000];
+  let igoals = { levels: IG_DEF.slice(), basis: "avg3", y: null };
   const money = {};
   let sha = null, gen = 0, pushing = false, again = false;
   const isBlankDay = d => !d || (!d.tasks.length && !d.top.some(x => x.t || x.d) && !Object.values(d.habits).some(Boolean) && d.englishMin == null && d.funMin == null && !d.energy && !d.mood && !d.win && !d.lesson && !d.blocker && !d.note);
-  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, cash, gold, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
+  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, cash, gold, igoals, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
   const lsSave = () => { try { localStorage.setItem(LS, JSON.stringify({ ...snapshot(), quotes, sha, dirty: [...dirty] })); return true; } catch { return false; } };
   const lsLoad = () => { try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } };
   const normHold = items => Array.isArray(items) ? items.filter(h => h && typeof h.secid === "string").map(h => ({ secid: h.secid, kind: ["share", "bond", "gold"].includes(h.kind) ? h.kind : "share", qty: Number.isFinite(h.qty) ? h.qty : null, avg: Number.isFinite(h.avg) ? h.avg : null })) : [];
@@ -369,6 +444,10 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     if (!dirty.has("gold") && data.gold && typeof data.gold === "object") gold = { g: Number.isFinite(data.gold.g) ? data.gold.g : null, avg: Number.isFinite(data.gold.avg) ? data.gold.avg : null };
     if (!dirty.has("cash") && data.cash && typeof data.cash === "object") cash = { broker: Number.isFinite(data.cash.broker) ? data.cash.broker : null, hand: Number.isFinite(data.cash.hand) ? data.cash.hand : null };
     Object.entries(data.money || {}).forEach(([k, v]) => { if (!dirty.has("money/" + k)) money[k] = normMon(k, v); });
+    if (!dirty.has("igoals") && data.igoals && typeof data.igoals === "object") {
+      const lv = Array.isArray(data.igoals.levels) ? [...new Set(data.igoals.levels.filter(x => Number.isFinite(x) && x > 0))].sort((a, b) => a - b) : IG_DEF.slice();
+      igoals = { levels: lv.length ? lv : IG_DEF.slice(), basis: ["month", "avg3", "best"].includes(data.igoals.basis) ? data.igoals.basis : "avg3", y: Number.isFinite(data.igoals.y) ? data.igoals.y : null };
+    }
   }
 
   // ---------- GitHub ----------
@@ -763,6 +842,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
         <div><h2>Финансы</h2>
           <div class="sub num ${stale ? "stale" : ""}">${quotes?.live ? `Цены Мосбиржи на ${new Date(quotes.live).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Цены биржи ещё не загружались"}${updText ? ` · дивиденды обновлены ${esc(updText)}` : ""}${stale && updText ? " · давно" : ""}</div>
         </div>
+        <div class="nav">${igButton(P)}</div>
       </div>
 
       <div class="tiles">
@@ -867,6 +947,118 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     </div>`;
   }
 
+  // ---------- Цели дохода ----------
+  const igDlg = document.getElementById("ig"), igIn = document.getElementById("ig-in");
+  let igOpenLv = null;
+  const kfmt = v => v >= 1e6 ? nf(v / 1e6, v % 1e6 ? 1 : 0) + " млн" : v >= 1e3 ? nf(v / 1e3, v % 1e3 ? 1 : 0) + " тыс" : nf(v);
+  const incOf = k => { const x = money[k]; return x ? x.inc.reduce((a, y) => a + (Number(y.a) || 0), 0) : 0; };
+  function igStats() {
+    const P = portfolio(), now = todayIso().slice(0, 7);
+    const last = Array.from({ length: 3 }, (_, i) => ymAdd(now, -i)).map(k => ({ k, I: incOf(k) })).filter(x => x.I > 0);
+    const hist = Object.keys(money).sort().map(k => ({ k, I: incOf(k) })).filter(x => x.I > 0);
+    const val = { month: incOf(now), avg3: last.length ? last.reduce((a, x) => a + x.I, 0) / last.length : 0, best: hist.reduce((a, x) => Math.max(a, x.I), 0) };
+    const inc = val[igoals.basis] || 0;
+    const passive = P.fwd / 12;
+    const autoY = P.val > 0 && P.fwd > 0 ? Math.min(15, Math.max(4, Math.round(P.fwd / P.val * 200) / 2)) : 8;
+    const y = (igoals.y ?? autoY) / 100;
+    const six = Array.from({ length: 6 }, (_, i) => ymAdd(now, -i)).map(k => money[k]).filter(Boolean);
+    const invs = six.map(m => m.inv).filter(v => Number.isFinite(v) && v > 0);
+    const rests = six.map(m => { const i2 = m.inc.reduce((a, x) => a + (Number(x.a) || 0), 0), e2 = EXP.reduce((a, c) => a + (Number(m.exp[c]) || 0), 0); return i2 ? i2 - e2 : null; }).filter(v => v != null);
+    const C = invs.length ? invs.reduce((a, b) => a + b, 0) / invs.length : rests.length ? Math.max(0, rests.reduce((a, b) => a + b, 0) / rests.length) : 0;
+    const K0 = P.all;
+    const lv = igoals.levels.map(L => {
+      const reached = hist.find(x => x.I >= L);
+      const cap = L * 12 / y;
+      const r = y / 12;
+      let n = null;
+      if (K0 >= cap) n = 0;
+      else if (C > 0 || K0 > 0) { const a = cap * r + C, b = K0 * r + C; n = b > 0 ? Math.ceil(Math.log(a / b) / Math.log(1 + r)) : null; }
+      return { L, ok: inc >= L, reached: reached?.k || null, pct: Math.min(1, inc / L), ppct: Math.min(1, passive / L), cap, n, gap: Math.max(0, L - inc) };
+    });
+    const curI = lv.findIndex(x => !x.ok);
+    return { P, inc, passive, y, autoY, C, K0, lv, curI, hasData: hist.length > 0, val };
+  }
+  function igButton() {
+    const S = igStats(), c = S.lv[S.curI];
+    const mini = !S.hasData ? "задать" : c ? `${nf(c.pct * 100, 0)} % до ${kfmt(c.L)}` : "все взяты";
+    return `<button class="btn ig-btn" data-act="ig-open" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.2" fill="var(--accent)"/></svg>Цели дохода<span class="ig-mini">${mini}</span></button>`;
+  }
+  const igTerm = n => { if (n == null || !isFinite(n)) return { v: "не сдвинется", t: "начните откладывать в портфель" }; if (n <= 0) return { v: "уже хватает", t: "капитал покрывает цель" }; const y = Math.floor(n / 12), m = n % 12; const d = new Date(); d.setMonth(d.getMonth() + n); return { v: (y ? y + " г. " : "") + (m ? m + " мес" : ""), t: "≈ к " + ymName(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`).toLowerCase() }; };
+  function renderIG() {
+    if (!igDlg.open) return;
+    const S = igStats(), L = S.lv, n = L.length;
+    const pos = v => { if (v <= 0) return 0; let p = 0, prev = 0; for (let i = 0; i < n; i++) { if (v < L[i].L) return ((i + (v - prev) / (L[i].L - prev)) / n) * 100; prev = L[i].L; } return 100; };
+    const you = pos(S.inc);
+    const done = L.filter(x => x.ok).length;
+    const basisLbl = { month: "этот месяц", avg3: "среднее за 3 месяца", best: "лучший месяц" };
+    const focus = document.activeElement?.id;
+    igIn.innerHTML = `
+      <div class="ig-head">
+        <div><h2 id="ig-h">Цели дохода</h2><div class="sub num">Лесенка доходов в месяц · взято ${done} из ${n}</div></div>
+        <button class="btn ghost" data-act="ig-close" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="ig-now">
+        <div class="tile good"><span class="k">Доход, ${basisLbl[igoals.basis]}</span><span class="v">${S.hasData ? rub(S.inc) : "—"}</span><span class="t">${S.hasData ? (L[S.curI] ? `до ${kfmt(L[S.curI].L)}: ${rub(L[S.curI].gap)}` : "все ступени взяты") : "впишите доход в «Доход и расход»"}</span></div>
+        <div class="tile warn"><span class="k">Пассивный, дивиденды</span><span class="v">${rub(S.passive)}</span><span class="t">в месяц, прогноз на 12 мес после НДФЛ</span></div>
+        <div class="tile"><span class="k">Откладываете</span><span class="v">${rub(S.C)}</span><span class="t">в месяц · капитал ${kfmt(Math.round(S.K0))} ₽</span></div>
+      </div>
+      <div class="ig-track" role="img" aria-label="Текущий доход ${rub(S.inc)} на лесенке целей">
+        <span class="ln"></span><span class="fill" style="width:${you}%"></span>
+        ${L.map((x, i) => `<button class="mk ${x.ok ? "ok" : ""} ${i === S.curI ? "cur" : ""}" style="left:${(i + 1) / n * 100}%" data-act="ig-jump" data-l="${x.L}" aria-label="Цель ${kfmt(x.L)}"></button><span class="lb ${x.ok ? "ok" : ""}" style="left:${(i + 1) / n * 100}%">${kfmt(x.L)}</span>`).join("")}
+        ${S.hasData ? `<span class="you" style="left:${you}%" data-t="вы · ${kfmt(Math.round(S.inc))}"></span>` : ""}
+      </div>
+      <div class="ig-ctl">
+        <div class="scale"><span class="lbl">Считать доход по</span>
+          <div class="seg">${[["month", "Месяцу"], ["avg3", "3 мес"], ["best", "Лучшему"]].map(([k, t]) => `<button type="button" data-act="ig-basis" data-k="${k}" aria-pressed="${igoals.basis === k}">${t}</button>`).join("")}</div></div>
+        <div class="scale"><label class="lbl" for="ig-y">Доходность капитала <b>${nf(S.y * 100, 1)} %</b>${igoals.y == null ? " · из портфеля" : ` · <a href="#" data-act="ig-yreset">сбросить</a>`}</label>
+          <input type="range" id="ig-y" min="4" max="15" step="0.5" value="${S.y * 100}" data-ig="y"></div>
+      </div>
+      <div class="ig-list">${L.map((x, i) => {
+        const open = igOpenLv === x.L, T = igTerm(x.n), st = x.ok ? "ok" : i === S.curI ? "cur" : "";
+        return `<div class="ig-lv ${st}" id="ig-lv-${x.L}">
+          <button aria-expanded="${open}" data-act="ig-toggle" data-l="${x.L}">
+            <span class="ck">${x.ok ? "✓" : i + 1}</span>
+            <span class="amt">${kfmt(x.L)} ₽<small>в месяц</small></span>
+            <span class="pc">${x.ok ? (x.reached ? "взята · " + ymName(x.reached).toLowerCase() : "взята") : nf(x.pct * 100, 0) + " %"}</span>
+            <span class="bars"><span class="bar"><i style="width:${(x.pct * 100).toFixed(1)}%"></i></span><span class="bar" title="Пассивный доход"><i class="pas" style="width:${(x.ppct * 100).toFixed(1)}%"></i></span></span>
+          </button>
+          ${open ? `<div class="ig-det">
+            <div class="row3">
+              <div class="st"><span class="k">${x.ok ? "Запас сверх цели" : "Не хватает в месяц"}</span><span class="v ${x.ok ? "up" : ""}">${x.ok ? "+" + rub(S.inc - x.L) : rub(x.gap)}</span><span class="t">${x.ok ? "" : S.inc ? "рост на " + nf((x.L / S.inc - 1) * 100, 0) + " %" : "дохода пока нет"}</span></div>
+              <div class="st"><span class="k">Капитал, чтобы жить на дивиденды</span><span class="v">${kfmt(Math.round(x.cap / 1e4) * 1e4)} ₽</span><span class="t">при ${nf(S.y * 100, 1)} % · сейчас ${nf(Math.min(100, S.K0 / x.cap * 100), 1)} %</span></div>
+              <div class="st"><span class="k">Срок до этого капитала</span><span class="v">${T.v}</span><span class="t">${T.t}</span></div>
+            </div>
+            <div class="foot"><span class="hint num">Дивиденды сейчас закрывают ${nf(x.ppct * 100, 1)} % этой цели.</span><button class="btn ghost" data-act="ig-del" data-l="${x.L}">Убрать цель</button></div>
+          </div>` : ""}
+        </div>`; }).join("")}</div>
+      <form class="ig-add" data-form="ig-add">
+        <input type="number" id="ig-new" inputmode="numeric" min="1000" step="1000" placeholder="своя цель, ₽ в месяц" aria-label="Новая цель, рублей в месяц">
+        <button class="btn primary" type="submit">Добавить цель</button>
+      </form>
+      ${(() => { const q = [150000, 400000, 1500000, 2000000, 3000000].filter(v => !igoals.levels.includes(v)); return q.length ? `<div class="ig-quick">${q.map(v => `<button type="button" data-act="ig-quick" data-l="${v}">+ ${kfmt(v)}</button>`).join("")}${igoals.levels.join() !== IG_DEF.join() ? `<button type="button" data-act="ig-def">вернуть стандартные</button>` : ""}</div>` : ""; })()}
+      <p class="hint">Зелёная полоска — заработок, жёлтая — дивиденды. Срок считается с реинвестированием: капитал сейчас плюс то, что вы откладываете в портфель каждый месяц.</p>`;
+    if (focus) { const f = document.getElementById(focus); if (f) f.focus(); }
+  }
+  function igOpen() { if (!igDlg.open) { igOpenLv = null; igDlg.showModal(); } renderIG(); }
+  igDlg.addEventListener("click", e => {
+    if (e.target === igDlg) { igDlg.close(); return; }
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const a = b.dataset.act, l = Number(b.dataset.l);
+    if (a === "ig-close") igDlg.close();
+    else if (a === "ig-toggle") { igOpenLv = igOpenLv === l ? null : l; renderIG(); }
+    else if (a === "ig-jump") { igOpenLv = l; renderIG(); document.getElementById("ig-lv-" + l)?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    else if (a === "ig-basis") { igoals.basis = b.dataset.k; savePath("igoals"); renderIG(); }
+    else if (a === "ig-yreset") { e.preventDefault(); igoals.y = null; savePath("igoals"); renderIG(); }
+    else if (a === "ig-del") { igoals.levels = igoals.levels.filter(x => x !== l); if (!igoals.levels.length) igoals.levels = IG_DEF.slice(); igOpenLv = null; savePath("igoals"); renderIG(); }
+    else if (a === "ig-quick") { igAdd(l); }
+    else if (a === "ig-def") { igoals.levels = IG_DEF.slice(); savePath("igoals"); renderIG(); }
+  });
+  function igAdd(v) { if (!(v > 0) || igoals.levels.includes(v)) return; igoals.levels = [...igoals.levels, v].sort((a, b) => a - b); igOpenLv = v; savePath("igoals"); renderIG(); }
+  igDlg.addEventListener("input", e => { if (e.target.dataset.ig === "y") { igoals.y = Number(e.target.value); const b = e.target.previousElementSibling?.querySelector("b"); if (b) b.textContent = nf(igoals.y, 1) + " %"; } });
+  igDlg.addEventListener("change", e => { if (e.target.dataset.ig === "y") { savePath("igoals"); renderIG(); } });
+  igDlg.addEventListener("submit", e => { e.preventDefault(); const inp = document.getElementById("ig-new"), v = Math.round(Number(inp.value)); if (!(v >= 1000)) { inp.focus(); return; } igAdd(v); });
+  igDlg.addEventListener("close", () => { if (tab === "money") softRender(); });
+
   function renderSync() {
     view.innerHTML = `
     <div style="display:grid;gap:20px;max-width:640px">
@@ -917,7 +1109,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
   }
   const typing = () => { const a = document.activeElement; return a && view.contains(a) && (a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && a.type !== "checkbox")); };
   let pendingRender = false;
-  const softRender = () => { if (typing()) { pendingRender = true; return; } render(); };
+  const softRender = () => { if (igDlg.open) renderIG(); if (typing()) { pendingRender = true; return; } render(); };
   view.addEventListener("focusout", () => setTimeout(() => { if (pendingRender && !typing()) { pendingRender = false; render(); } }, 0));
 
   // ---------- Действия ----------
@@ -949,6 +1141,7 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
     else if (a === "gh-sync") { setStatus("busy", "Синхронизирую…"); sync(false); }
     else if (a === "gh-off") { GH = null; sha = null; try { localStorage.removeItem(GHK); } catch {} setStatus("ok", "На этом устройстве"); render(); }
     else if (a === "h-del") { const i = +b.dataset.i, h = holdings[i]; if (!h) return; holdings.splice(i, 1); savePath("portfolio/holdings"); render(); }
+    else if (a === "ig-open") igOpen();
     else if (a === "mprev") { monthOf = ymAdd(monthOf, -1); render(); }
     else if (a === "mnext") { monthOf = ymAdd(monthOf, 1); render(); }
     else if (a === "inc-add") { mon(monthOf).inc.push({ id: uid(), t: "", a: null }); savePath("money/" + monthOf); render(); }
