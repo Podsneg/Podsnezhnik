@@ -241,6 +241,48 @@ table.pf tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); }
 .banner { padding: 10px 14px; border-radius: 10px; background: var(--warn-soft); font-size: 13.5px; }
 [hidden] { display: none !important; }
 
+/* Журнал расходов */
+.sp-card { gap: 14px; }
+.sp-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 10px 20px; }
+.sp-top .k { font-size: 13px; color: var(--muted); }
+.sp-top .big { color: var(--ink); }
+.sp-top .t { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp-add { display: grid; grid-template-columns: 150px 1fr 1.3fr 140px auto; gap: 8px; }
+.sp-add input, .sp-add select { border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; background: var(--bg); font: inherit; color: inherit; min-width: 0; }
+.sp-add input.amt { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; font-size: 16px; }
+.sp-add .btn { padding: 9px 16px; }
+.sp-add input.amt::-webkit-inner-spin-button, .sp-add input.amt::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.sp-add input.amt { -moz-appearance: textfield; appearance: textfield; }
+.sp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-chips button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 11px; font-size: 13px; cursor: pointer; color: var(--muted); }
+.sp-chips button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.sp-body { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; align-items: start; }
+.sp-cats { display: grid; gap: 2px; }
+.sp-cat { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 7px 8px; border-radius: 10px; font-size: 14px; }
+.sp-cat:hover { background: var(--bg); }
+.sp-cat:focus-visible { outline: 2px solid var(--accent); }
+.sp-cat[aria-pressed="true"] { background: var(--accent-soft); }
+.sp-cat .s { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.sp-cat .s small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+.sp-cat .bar { grid-column: 1 / -1; height: 5px; }
+.sp-cat.zero { color: var(--muted); }
+.sp-log { list-style: none; margin: 0; padding: 0; display: grid; }
+.sp-log .dh { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); padding: 10px 0 4px; font-variant-numeric: tabular-nums; }
+.sp-log .dh:first-child { padding-top: 0; }
+.sp-log .it { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.sp-log .it .w small { display: block; font-size: 12px; color: var(--muted); }
+.sp-log .it .a { font-weight: 600; font-variant-numeric: tabular-nums; }
+.sp-log .it.new { animation: spNew 1.2s ease; }
+@keyframes spNew { from { background: var(--accent-soft); } to { background: transparent; } }
+@media (max-width: 820px) { .sp-body { grid-template-columns: 1fr; } .sp-add { grid-template-columns: 1fr 1fr; } .sp-add .btn { grid-column: 1 / -1; } }
+
+/* Индекс Мосбиржи */
+.idx { display: inline-flex; align-items: baseline; gap: 8px; padding: 6px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.idx b { color: var(--bad); font-family: var(--font-display); font-weight: 500; font-size: 15px; }
+.idx .live { width: 6px; height: 6px; border-radius: 50%; background: var(--bad); align-self: center; }
+@media (prefers-reduced-motion: no-preference) { .idx .live { animation: idxPulse 2s ease-in-out infinite; } }
+@keyframes idxPulse { 50% { opacity: .25; } }
+
 /* Цели дохода: кнопка в шапке финансов открывает окно-лесенку уровней */
 .ig-btn { display: inline-flex; align-items: center; gap: 8px; }
 .ig-btn svg { width: 16px; height: 16px; flex: none; }
@@ -427,16 +469,23 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
   let cash = { broker: null, hand: null };
   let gold = { g: null, avg: null };
   let quotes = null;
-  const IG_DEF = [100000, 200000, 300000, 500000, 750000, 1000000];
-  let igoals = { levels: IG_DEF.slice(), basis: "avg3", y: null };
+  const IG_OLD = [100000, 200000, 300000, 500000, 750000, 1000000].join();
+  const IG_DEF = [25000, 50000, 100000, 200000, 300000, 500000, 1000000];
+  let igoals = { levels: IG_DEF.slice(), period: 10, infl: 6, y: null, c: null };
+  let idx = null, mc = null;
   const money = {};
   let sha = null, gen = 0, pushing = false, again = false;
   const isBlankDay = d => !d || (!d.tasks.length && !d.top.some(x => x.t || x.d) && !Object.values(d.habits).some(Boolean) && d.englishMin == null && d.funMin == null && !d.energy && !d.mood && !d.win && !d.lesson && !d.blocker && !d.note);
-  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, cash, gold, igoals, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
+  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, cash, gold, igoals, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || m.log.length || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
   const lsSave = () => { try { localStorage.setItem(LS, JSON.stringify({ ...snapshot(), quotes, sha, dirty: [...dirty] })); return true; } catch { return false; } };
   const lsLoad = () => { try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } };
   const normHold = items => Array.isArray(items) ? items.filter(h => h && typeof h.secid === "string").map(h => ({ secid: h.secid, kind: ["share", "bond", "gold"].includes(h.kind) ? h.kind : "share", qty: Number.isFinite(h.qty) ? h.qty : null, avg: Number.isFinite(h.avg) ? h.avg : null })) : [];
-  const normMon = (k, o) => ({ month: k, inc: Array.isArray(o?.inc) ? o.inc.map(x => ({ id: String(x.id || uid()), t: String(x.t ?? ""), a: Number.isFinite(x.a) ? x.a : null })) : [], exp: o?.exp && typeof o.exp === "object" ? o.exp : {}, inv: Number.isFinite(o?.inv) ? o.inv : null });
+  const normMon = (k, o) => {
+    const log = Array.isArray(o?.log) ? o.log.filter(x => x && Number.isFinite(x.a) && x.a > 0).map(x => ({ id: String(x.id || uid()), d: /^\d{4}-\d{2}-\d{2}$/.test(x.d) ? x.d : k + "-01", a: x.a, c: String(x.c || "Прочее"), t: String(x.t ?? "") })) : [];
+    // Старые суммы по категориям превращаются в записи журнала
+    if (o?.exp && typeof o.exp === "object") Object.entries(o.exp).forEach(([c, a]) => { if (Number.isFinite(a) && a > 0) log.push({ id: uid(), d: k + "-01", a, c, t: "итог месяца, внесён одной суммой" }); });
+    return { month: k, inc: Array.isArray(o?.inc) ? o.inc.map(x => ({ id: String(x.id || uid()), t: String(x.t ?? ""), a: Number.isFinite(x.a) ? x.a : null })) : [], log, exp: {}, inv: Number.isFinite(o?.inv) ? o.inv : null };
+  };
   function applyData(data) {
     if (!data || typeof data !== "object") return;
     Object.entries(data.days || {}).forEach(([k, v]) => { if (!dirty.has("days/" + k)) days[k] = norm(k, v); });
@@ -446,7 +495,8 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     Object.entries(data.money || {}).forEach(([k, v]) => { if (!dirty.has("money/" + k)) money[k] = normMon(k, v); });
     if (!dirty.has("igoals") && data.igoals && typeof data.igoals === "object") {
       const lv = Array.isArray(data.igoals.levels) ? [...new Set(data.igoals.levels.filter(x => Number.isFinite(x) && x > 0))].sort((a, b) => a - b) : IG_DEF.slice();
-      igoals = { levels: lv.length ? lv : IG_DEF.slice(), basis: ["month", "avg3", "best"].includes(data.igoals.basis) ? data.igoals.basis : "avg3", y: Number.isFinite(data.igoals.y) ? data.igoals.y : null };
+      const g = data.igoals, fin = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi ? v : null;
+      igoals = { levels: lv.length && lv.join() !== IG_OLD ? lv : IG_DEF.slice(), period: [5, 10, 15].includes(g.period) ? g.period : 10, infl: fin(g.infl, 0, 30) ?? 6, y: g.period ? fin(g.y, 2, 20) : null, c: fin(g.c, 0, 1e9) };
     }
   }
 
@@ -777,7 +827,10 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
   let monthOf = todayIso().slice(0, 7);
   const ymAdd = (ym, n) => { const [y, m] = ym.split("-").map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
   const ymName = ym => { const [y, m] = ym.split("-").map(Number); const t = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1)); return t[0].toUpperCase() + t.slice(1).replace(" г.", ""); };
-  const mblank = ym => ({ month: ym, inc: [{ id: uid(), t: "Зарплата", a: null }], exp: {}, inv: null });
+  const mblank = ym => ({ month: ym, inc: [{ id: uid(), t: "Зарплата", a: null }], log: [], exp: {}, inv: null });
+  const spentOf = m => (m?.log || []).reduce((a, x) => a + x.a, 0);
+  let spCat = null, spMore = false, spNew = null, spLastCat = "Еда";
+  try { spLastCat = localStorage.getItem("podsnezhnik.lastcat") || "Еда"; } catch {}
   const mon = ym => (money[ym] ||= mblank(ym));
   const prevBizDay = s => { let d = addDays(s, -1); while ([0, 6].includes(wd(d))) d = addDays(d, -1); return d; };
   const ddmm = s => s.slice(8, 10) + "." + s.slice(5, 7);
@@ -829,10 +882,10 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     if (P.cashB > 0) withVal.push({ label: "На счёте", val: P.cashB, c: "var(--muted)" });
     const m = mon(monthOf);
     const I = m.inc.reduce((a, x) => a + (Number(x.a) || 0), 0);
-    const E = EXP.reduce((a, c) => a + (Number(m.exp[c]) || 0), 0);
+    const E = spentOf(m);
     const R = I - E, rate = I ? R / I : null;
     const hist = Array.from({ length: 6 }, (_, i) => ymAdd(monthOf, -i)).filter(k => money[k]).map(k => {
-      const x = money[k], i2 = x.inc.reduce((a, y) => a + (Number(y.a) || 0), 0), e2 = EXP.reduce((a, c) => a + (Number(x.exp[c]) || 0), 0);
+      const x = money[k], i2 = x.inc.reduce((a, y) => a + (Number(y.a) || 0), 0), e2 = spentOf(x);
       return { k, I: i2, E: e2, R: i2 - e2, rate: i2 ? (i2 - e2) / i2 : null, inv: Number(x.inv) || 0 };
     });
 
@@ -842,7 +895,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
         <div><h2>Финансы</h2>
           <div class="sub num ${stale ? "stale" : ""}">${quotes?.live ? `Цены Мосбиржи на ${new Date(quotes.live).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Цены биржи ещё не загружались"}${updText ? ` · дивиденды обновлены ${esc(updText)}` : ""}${stale && updText ? " · давно" : ""}</div>
         </div>
-        <div class="nav">${igButton(P)}</div>
+        <div class="nav" style="flex-wrap:wrap">${idxHtml()}<button class="btn" data-act="sp-focus">+ Расход</button>${igButton(P)}</div>
       </div>
 
       <div class="tiles">
@@ -851,6 +904,8 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
         <div class="tile ${P.valKnown - P.cost > 0 ? "good" : P.valKnown - P.cost < 0 ? "bad" : ""}"><span class="k">Прибыль</span><span class="v ${cls(P.valKnown - P.cost)}">${P.cost ? srub(P.valKnown - P.cost) : "—"}</span><span class="t num">${P.cost ? spct((P.valKnown - P.cost) / P.cost) + (P.noAvg ? " · по бумагам со средней ценой" : "") : "впишите средние цены"}</span></div>
         <div class="tile"><span class="k">Дивиденды за 12 мес</span><span class="v">${rub(P.past)}</span><span class="t num">впереди за 12 мес ≈ ${rub(P.fwd)} · после НДФЛ 13 %</span></div>
       </div>
+
+      ${spendCard(m, E)}
 
       <section class="card" aria-labelledby="h-pf">
         <div class="card-h"><h3 id="h-pf">Портфель</h3><span class="meta">вы вводите количество и среднюю цену, остальное считается само</span></div>
@@ -937,8 +992,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
               <input class="amt" type="number" inputmode="decimal" min="0" step="any" id="ia-${x.id}" data-inc-a="${x.id}" value="${x.a ?? ""}" placeholder="0" aria-label="Сумма, ₽">
               <button class="icon" data-act="inc-del" data-id="${x.id}" aria-label="Удалить доход">✕</button></div>`).join("")}
             <div><button class="btn ghost" data-act="inc-add">+ доход</button></div>
-            <div class="hint">Расходы за месяц</div>
-            ${EXP.map((c, i) => `<div class="mrow"><label class="lbl" for="ex-${i}">${c}</label><input class="amt" type="number" inputmode="decimal" min="0" step="any" id="ex-${i}" data-exp="${c}" value="${m.exp[c] ?? ""}" placeholder="0"><span></span></div>`).join("")}
+            <div class="mrow"><span class="lbl">Расходы за месяц <span class="hint">из журнала выше</span></span><span class="num" style="text-align:right;font-weight:600">${rub(E)}</span><span></span></div>
             <div class="mrow" style="margin-top:6px"><label class="lbl" for="m-inv"><b>Отправил в портфель</b></label><input class="amt" type="number" inputmode="decimal" min="0" step="any" id="m-inv" data-inv="1" value="${m.inv ?? ""}" placeholder="0"><span></span></div>
           </div>
           ${hist.length > 1 ? `<div class="tablewrap"><table class="pf" style="min-width:420px"><thead><tr><th>Месяц</th><th>Доход</th><th>Расход</th><th>Норма</th><th>В портфель</th></tr></thead><tbody>${hist.map(h => `<tr><td>${esc(ymName(h.k))}</td><td>${rub(h.I)}</td><td>${rub(h.E)}</td><td>${h.rate != null ? nf(h.rate * 100, 0) + " %" : "—"}</td><td>${rub(h.inv)}</td></tr>`).join("")}</tbody></table></div>` : ""}
@@ -947,71 +1001,139 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     </div>`;
   }
 
-  // ---------- Цели дохода ----------
+  // ---------- Журнал расходов ----------
+  function spendCard(m, E) {
+    const t = todayIso(), isCur = monthOf === t.slice(0, 7);
+    const by = Object.fromEntries(EXP.map(c => [c, { s: 0, n: 0 }]));
+    m.log.forEach(x => { const c = by[x.c] ? x.c : "Прочее"; by[c].s += x.a; by[c].n++; });
+    const max = Math.max(1, ...Object.values(by).map(v => v.s));
+    const today = m.log.filter(x => x.d === t).reduce((a, x) => a + x.a, 0);
+    const dayN = isCur ? Number(t.slice(8, 10)) : new Date(+monthOf.slice(0, 4), +monthOf.slice(5, 7), 0).getDate();
+    const list = m.log.filter(x => !spCat || x.c === spCat).sort((a, b) => a.d < b.d ? 1 : a.d > b.d ? -1 : 0);
+    const shown = spMore ? list : list.slice(0, 12);
+    const groups = []; shown.forEach(x => { const g = groups[groups.length - 1]; if (g && g.d === x.d) g.items.push(x); else groups.push({ d: x.d, items: [x] }); });
+    const dsum = d => list.filter(x => x.d === d).reduce((a, x) => a + x.a, 0);
+    const defDate = isCur ? t : monthOf + "-01";
+    return `<section class="card sp-card" aria-labelledby="h-sp" id="sp">
+        <div class="card-h"><h3 id="h-sp">Расходы</h3>
+          <div class="nav"><button class="btn" data-act="mprev" aria-label="Предыдущий месяц">←</button><span class="num" style="min-width:120px;text-align:center;font-weight:500">${esc(ymName(monthOf))}</span><button class="btn" data-act="mnext" aria-label="Следующий месяц">→</button></div></div>
+        <div class="sp-top">
+          <div><div class="k">Потрачено за месяц</div><div class="big">${rub(E)}</div></div>
+          <div class="t">${isCur ? `сегодня ${rub(today)} · ` : ""}в среднем ${rub(E / dayN)} в день · ${m.log.length} ${m.log.length % 10 === 1 && m.log.length % 100 !== 11 ? "запись" : [2, 3, 4].includes(m.log.length % 10) && ![12, 13, 14].includes(m.log.length % 100) ? "записи" : "записей"}</div>
+        </div>
+        <form class="sp-add" data-form="spend" autocomplete="off">
+          <input class="amt" id="sp-amt" type="number" inputmode="decimal" min="0" step="any" placeholder="сумма, ₽" aria-label="Сумма расхода, рублей" required>
+          <select id="sp-cat" aria-label="Категория">${EXP.map(c => `<option ${c === spLastCat ? "selected" : ""}>${c}</option>`).join("")}</select>
+          <input id="sp-note" type="text" maxlength="80" placeholder="на что, необязательно" aria-label="Комментарий">
+          <input id="sp-date" type="date" value="${defDate}" aria-label="Дата">
+          <button class="btn primary" type="submit">Записать</button>
+        </form>
+        <div class="sp-body">
+          <div class="sp-cats" role="group" aria-label="Категории, нажмите для фильтра">
+            ${EXP.map(c => `<button class="sp-cat ${by[c].s ? "" : "zero"}" data-act="sp-cat" data-c="${esc(c)}" aria-pressed="${spCat === c}">
+              <span>${esc(c)}</span><span class="s">${by[c].s ? rub(by[c].s) : "—"}${by[c].s && E ? `<small>${nf(by[c].s / E * 100, 0)} %</small>` : ""}</span>
+              <span class="bar"><i style="width:${(by[c].s / max * 100).toFixed(1)}%"></i></span></button>`).join("")}
+          </div>
+          <div>
+            ${spCat ? `<div class="sp-chips" style="margin-bottom:8px"><button aria-pressed="true" data-act="sp-cat" data-c="${esc(spCat)}">${esc(spCat)} ✕</button></div>` : ""}
+            ${groups.length ? `<ul class="sp-log">${groups.map(g => `<li class="dh"><span>${esc(g.d === t ? "Сегодня" : g.d === addDays(t, -1) ? "Вчера" : fmtShort(g.d))}</span><span>${rub(dsum(g.d))}</span></li>${g.items.map(x => `<li class="it ${x.id === spNew ? "new" : ""}"><span class="w">${esc(x.t || x.c)}${x.t ? `<small>${esc(x.c)}</small>` : ""}</span><span class="a">${rub(x.a)}</span><button class="icon" data-act="sp-del" data-id="${x.id}" aria-label="Удалить расход ${rub(x.a)}">✕</button></li>`).join("")}`).join("")}</ul>
+            ${list.length > 12 ? `<button class="btn ghost" data-act="sp-more">${spMore ? "Свернуть" : `Показать все ${list.length}`}</button>` : ""}` : `<p class="empty">${spCat ? "В этой категории пока пусто." : "Впишите сумму и нажмите «Записать» — всё сложится само."}</p>`}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  // ---------- Индекс Мосбиржи и MCFTR ----------
+  const idxHtml = () => idx ? `<span class="idx" id="idx" title="Индекс Мосбиржи, обновляется каждые 30 секунд"><span class="live"></span>IMOEX <b>${nf(idx.v, 2)}</b><span class="${cls(idx.chp)}">${spct(idx.chp / 100)}</span><span>${esc(idx.t)}</span></span>` : `<span class="idx" id="idx"><span class="live"></span>IMOEX <b>…</b></span>`;
+  async function loadIdx() {
+    try {
+      const x = await (await tfetch(`${ISS}/engines/stock/markets/index/boards/SNDX/securities/IMOEX.json?iss.meta=off&iss.only=marketdata&marketdata.columns=CURRENTVALUE,LASTCHANGEPRC,UPDATETIME`, { cache: "no-store" })).json();
+      const r = x.marketdata.data[0]; if (!r || !(r[0] > 0)) return;
+      idx = { v: r[0], chp: r[1] ?? 0, t: String(r[2] || "").slice(0, 5) };
+      const el = document.getElementById("idx"); if (el) el.outerHTML = idxHtml();
+    } catch {}
+  }
+  const MCK = "podsnezhnik.mcftr";
+  async function loadMc() {
+    const t = todayIso();
+    try { const c = JSON.parse(localStorage.getItem(MCK) || "null"); if (c && c.day === t) { mc = c; return; } } catch {}
+    try {
+      const at = async d => { const x = await (await tfetch(`${ISS}/history/engines/stock/markets/index/securities/MCFTR.json?iss.meta=off&iss.only=history&history.columns=TRADEDATE,CLOSE&from=${d}&till=${addDays(d, 12)}`)).json(); const r = x.history.data.find(y => y[1] > 0); return r ? { d: r[0], v: r[1] } : null; };
+      const lastRows = await (await tfetch(`${ISS}/history/engines/stock/markets/index/securities/MCFTR.json?iss.meta=off&iss.only=history&history.columns=TRADEDATE,CLOSE&from=${addDays(t, -14)}`)).json();
+      const now = lastRows.history.data.filter(y => y[1] > 0).pop(); if (!now) return;
+      const o = { day: t, now: { d: now[0], v: now[1] } };
+      for (const y of [5, 10, 15]) { const p = await at(`${Number(t.slice(0, 4)) - y}${t.slice(4)}`); if (p) o["y" + y] = { ...p, cagr: Math.pow(now[1] / p.v, 365.25 / daysBetween(p.d, now[0])) - 1 }; }
+      mc = o; try { localStorage.setItem(MCK, JSON.stringify(o)); } catch {}
+      if (igDlg.open) renderIG();
+    } catch {}
+  }
+
+  // ---------- Цели по пассивному доходу ----------
   const igDlg = document.getElementById("ig"), igIn = document.getElementById("ig-in");
   let igOpenLv = null;
   const kfmt = v => v >= 1e6 ? nf(v / 1e6, v % 1e6 ? 1 : 0) + " млн" : v >= 1e3 ? nf(v / 1e3, v % 1e3 ? 1 : 0) + " тыс" : nf(v);
-  const incOf = k => { const x = money[k]; return x ? x.inc.reduce((a, y) => a + (Number(y.a) || 0), 0) : 0; };
   function igStats() {
     const P = portfolio(), now = todayIso().slice(0, 7);
-    const last = Array.from({ length: 3 }, (_, i) => ymAdd(now, -i)).map(k => ({ k, I: incOf(k) })).filter(x => x.I > 0);
-    const hist = Object.keys(money).sort().map(k => ({ k, I: incOf(k) })).filter(x => x.I > 0);
-    const val = { month: incOf(now), avg3: last.length ? last.reduce((a, x) => a + x.I, 0) / last.length : 0, best: hist.reduce((a, x) => Math.max(a, x.I), 0) };
-    const inc = val[igoals.basis] || 0;
     const passive = P.fwd / 12;
-    const autoY = P.val > 0 && P.fwd > 0 ? Math.min(15, Math.max(4, Math.round(P.fwd / P.val * 200) / 2)) : 8;
-    const y = (igoals.y ?? autoY) / 100;
+    const autoY = P.val > 0 && P.fwd > 0 ? Math.min(15, Math.max(3, Math.round(P.fwd / P.val * 200) / 2)) : 8;
+    const yPct = igoals.y ?? autoY, y = yPct / 100;
     const six = Array.from({ length: 6 }, (_, i) => ymAdd(now, -i)).map(k => money[k]).filter(Boolean);
     const invs = six.map(m => m.inv).filter(v => Number.isFinite(v) && v > 0);
-    const rests = six.map(m => { const i2 = m.inc.reduce((a, x) => a + (Number(x.a) || 0), 0), e2 = EXP.reduce((a, c) => a + (Number(m.exp[c]) || 0), 0); return i2 ? i2 - e2 : null; }).filter(v => v != null);
-    const C = invs.length ? invs.reduce((a, b) => a + b, 0) / invs.length : rests.length ? Math.max(0, rests.reduce((a, b) => a + b, 0) / rests.length) : 0;
-    const K0 = P.all;
-    const lv = igoals.levels.map(L => {
-      const reached = hist.find(x => x.I >= L);
-      const cap = L * 12 / y;
-      const r = y / 12;
-      let n = null;
-      if (K0 >= cap) n = 0;
-      else if (C > 0 || K0 > 0) { const a = cap * r + C, b = K0 * r + C; n = b > 0 ? Math.ceil(Math.log(a / b) / Math.log(1 + r)) : null; }
-      return { L, ok: inc >= L, reached: reached?.k || null, pct: Math.min(1, inc / L), ppct: Math.min(1, passive / L), cap, n, gap: Math.max(0, L - inc) };
-    });
-    const curI = lv.findIndex(x => !x.ok);
-    return { P, inc, passive, y, autoY, C, K0, lv, curI, hasData: hist.length > 0, val };
+    const autoC = invs.length ? invs.reduce((a, b) => a + b, 0) / invs.length : 0;
+    const C = igoals.c ?? autoC;
+    const mcp = mc?.["y" + igoals.period];
+    const R = mcp ? mcp.cagr : 0.12;
+    const infl = igoals.infl / 100;
+    const Rnet = R - y * 0.13 / 0.87;               // налог 13 % с дивидендной части доходности
+    const rr = (1 + Rnet) / (1 + infl) - 1;          // реальная доходность, сверх инфляции
+    const g = Math.pow(1 + rr, 1 / 12) - 1;
+    const K0 = P.acct;
+    const sim = cap => { if (K0 >= cap) return 0; let K = K0; for (let n = 1; n <= 720; n++) { K = K * (1 + g) + C; if (K >= cap) return n; if (n > 24 && g <= 0 && C <= 0) break; } return null; };
+    const at = yrs => { let K = K0; for (let n = 0; n < yrs * 12; n++) K = K * (1 + g) + C; return K * y / 12; };
+    const lv = igoals.levels.map(L => { const cap = L * 12 / y, n = sim(cap), f = n != null ? Math.pow(1 + infl, n / 12) : null; return { L, cap, n, ok: passive >= L, pct: Math.min(1, passive / L), kpct: Math.min(1, K0 / cap), capNom: f ? cap * f : null, LNom: f ? L * f : null }; });
+    return { P, passive, y, yPct, autoY, C, autoC, R, Rnet, rr, infl, K0, lv, curI: lv.findIndex(x => !x.ok), mcp, at };
   }
   function igButton() {
     const S = igStats(), c = S.lv[S.curI];
-    const mini = !S.hasData ? "задать" : c ? `${nf(c.pct * 100, 0)} % до ${kfmt(c.L)}` : "все взяты";
-    return `<button class="btn ig-btn" data-act="ig-open" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.2" fill="var(--accent)"/></svg>Цели дохода<span class="ig-mini">${mini}</span></button>`;
+    const mini = c ? `${nf(c.pct * 100, c.pct < 0.1 ? 1 : 0)} % до ${kfmt(c.L)}` : "все взяты";
+    return `<button class="btn ig-btn" data-act="ig-open" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.2" fill="var(--accent)"/></svg>Цели пассивного дохода<span class="ig-mini">${mini}</span></button>`;
   }
-  const igTerm = n => { if (n == null || !isFinite(n)) return { v: "не сдвинется", t: "начните откладывать в портфель" }; if (n <= 0) return { v: "уже хватает", t: "капитал покрывает цель" }; const y = Math.floor(n / 12), m = n % 12; const d = new Date(); d.setMonth(d.getMonth() + n); return { v: (y ? y + " г. " : "") + (m ? m + " мес" : ""), t: "≈ к " + ymName(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`).toLowerCase() }; };
+  const igWhen = n => { const d = new Date(); d.setMonth(d.getMonth() + n); return ymName(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`).toLowerCase(); };
+  const igTerm = n => { if (n == null) return { v: "не достижима", t: "при этих взносах и доходности" }; if (n <= 0) return { v: "уже достигнута", t: "капитал покрывает цель" }; const y = Math.floor(n / 12), m = n % 12; return { v: (y ? y + " г. " : "") + (m ? m + " мес" : ""), t: "≈ к " + igWhen(n) }; };
   function renderIG() {
     if (!igDlg.open) return;
     const S = igStats(), L = S.lv, n = L.length;
-    const pos = v => { if (v <= 0) return 0; let p = 0, prev = 0; for (let i = 0; i < n; i++) { if (v < L[i].L) return ((i + (v - prev) / (L[i].L - prev)) / n) * 100; prev = L[i].L; } return 100; };
-    const you = pos(S.inc);
-    const done = L.filter(x => x.ok).length;
-    const basisLbl = { month: "этот месяц", avg3: "среднее за 3 месяца", best: "лучший месяц" };
+    const pos = v => { if (v <= 0) return 0; let prev = 0; for (let i = 0; i < n; i++) { if (v < L[i].L) return ((i + (v - prev) / (L[i].L - prev)) / n) * 100; prev = L[i].L; } return 100; };
+    const you = pos(S.passive), done = L.filter(x => x.ok).length;
     const focus = document.activeElement?.id;
     igIn.innerHTML = `
       <div class="ig-head">
-        <div><h2 id="ig-h">Цели дохода</h2><div class="sub num">Лесенка доходов в месяц · взято ${done} из ${n}</div></div>
+        <div><h2 id="ig-h">Цели пассивного дохода</h2><div class="sub num">Дивиденды в месяц, в сегодняшних рублях · взято ${done} из ${n}</div></div>
         <button class="btn ghost" data-act="ig-close" aria-label="Закрыть">✕</button>
       </div>
       <div class="ig-now">
-        <div class="tile good"><span class="k">Доход, ${basisLbl[igoals.basis]}</span><span class="v">${S.hasData ? rub(S.inc) : "—"}</span><span class="t">${S.hasData ? (L[S.curI] ? `до ${kfmt(L[S.curI].L)}: ${rub(L[S.curI].gap)}` : "все ступени взяты") : "впишите доход в «Доход и расход»"}</span></div>
-        <div class="tile warn"><span class="k">Пассивный, дивиденды</span><span class="v">${rub(S.passive)}</span><span class="t">в месяц, прогноз на 12 мес после НДФЛ</span></div>
-        <div class="tile"><span class="k">Откладываете</span><span class="v">${rub(S.C)}</span><span class="t">в месяц · капитал ${kfmt(Math.round(S.K0))} ₽</span></div>
+        <div class="tile good"><span class="k">Пассивный сейчас</span><span class="v">${rub(S.passive)}</span><span class="t">в месяц, дивиденды на 12 мес после НДФЛ</span></div>
+        <div class="tile"><span class="k">Капитал</span><span class="v">${kfmt(Math.round(S.K0))} ₽</span><span class="t">портфель со свободными на счёте</span></div>
+        <div class="tile warn"><span class="k">Через 10 лет</span><span class="v">${rub(S.at(10))}</span><span class="t">в месяц, в сегодняшних рублях</span></div>
       </div>
-      <div class="ig-track" role="img" aria-label="Текущий доход ${rub(S.inc)} на лесенке целей">
+      <div class="ig-track" role="img" aria-label="Пассивный доход ${rub(S.passive)} на лесенке целей">
         <span class="ln"></span><span class="fill" style="width:${you}%"></span>
         ${L.map((x, i) => `<button class="mk ${x.ok ? "ok" : ""} ${i === S.curI ? "cur" : ""}" style="left:${(i + 1) / n * 100}%" data-act="ig-jump" data-l="${x.L}" aria-label="Цель ${kfmt(x.L)}"></button><span class="lb ${x.ok ? "ok" : ""}" style="left:${(i + 1) / n * 100}%">${kfmt(x.L)}</span>`).join("")}
-        ${S.hasData ? `<span class="you" style="left:${you}%" data-t="вы · ${kfmt(Math.round(S.inc))}"></span>` : ""}
+        <span class="you" style="left:${you}%" data-t="вы · ${kfmt(Math.round(S.passive))}"></span>
       </div>
       <div class="ig-ctl">
-        <div class="scale"><span class="lbl">Считать доход по</span>
-          <div class="seg">${[["month", "Месяцу"], ["avg3", "3 мес"], ["best", "Лучшему"]].map(([k, t]) => `<button type="button" data-act="ig-basis" data-k="${k}" aria-pressed="${igoals.basis === k}">${t}</button>`).join("")}</div></div>
-        <div class="scale"><label class="lbl" for="ig-y">Доходность капитала <b>${nf(S.y * 100, 1)} %</b>${igoals.y == null ? " · из портфеля" : ` · <a href="#" data-act="ig-yreset">сбросить</a>`}</label>
-          <input type="range" id="ig-y" min="4" max="15" step="0.5" value="${S.y * 100}" data-ig="y"></div>
+        <div class="scale"><span class="lbl">Доходность индекса MCFTR <b>${nf(S.R * 100, 1)} %</b> в год${S.mcp ? "" : " · загружаю, пока 12 %"}</span>
+          <div class="seg">${[5, 10, 15].map(k => `<button type="button" data-act="ig-period" data-k="${k}" aria-pressed="${igoals.period === k}">${k} лет</button>`).join("")}</div>
+          <span class="hint num" style="font-size:12px">${S.mcp ? `средняя за ${igoals.period} лет: ${nf(S.mcp.v, 0)} → ${nf(mc.now.v, 0)} пунктов, с дивидендами` : "индекс полной доходности Мосбиржи"}</span></div>
+        <div class="scale"><label class="lbl" for="ig-infl">Инфляция <b>${nf(igoals.infl, 1)} %</b> в год · ваша оценка</label>
+          <input type="range" id="ig-infl" min="2" max="15" step="0.5" value="${igoals.infl}" data-ig="infl">
+          <span class="hint num" style="font-size:12px">реальная доходность после налога и инфляции: <b class="${cls(S.rr)}">${spct(S.rr)}</b></span></div>
+        <div class="scale"><label class="lbl" for="ig-y">Дивидендная доходность <b>${nf(S.yPct, 1)} %</b>${igoals.y == null ? " · из портфеля" : ` · <a href="#" data-act="ig-yreset">из портфеля</a>`}</label>
+          <input type="range" id="ig-y" min="3" max="15" step="0.5" value="${S.yPct}" data-ig="y">
+          <span class="hint" style="font-size:12px">после налога; задаёт, сколько капитала нужно на цель</span></div>
+        <div class="scale"><label class="lbl" for="ig-c">Взнос в месяц, ₽${igoals.c == null ? " · среднее за полгода" : ` · <a href="#" data-act="ig-creset">из журнала</a>`}</label>
+          <input id="ig-c" type="number" inputmode="numeric" min="0" step="1000" value="${Math.round(S.C)}" data-ig="c" class="report" style="min-height:0;padding:7px 12px;text-align:right">
+          <span class="hint" style="font-size:12px">растёт вместе с инфляцией</span></div>
       </div>
       <div class="ig-list">${L.map((x, i) => {
         const open = igOpenLv === x.L, T = igTerm(x.n), st = x.ok ? "ok" : i === S.curI ? "cur" : "";
@@ -1019,27 +1141,27 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
           <button aria-expanded="${open}" data-act="ig-toggle" data-l="${x.L}">
             <span class="ck">${x.ok ? "✓" : i + 1}</span>
             <span class="amt">${kfmt(x.L)} ₽<small>в месяц</small></span>
-            <span class="pc">${x.ok ? (x.reached ? "взята · " + ymName(x.reached).toLowerCase() : "взята") : nf(x.pct * 100, 0) + " %"}</span>
-            <span class="bars"><span class="bar"><i style="width:${(x.pct * 100).toFixed(1)}%"></i></span><span class="bar" title="Пассивный доход"><i class="pas" style="width:${(x.ppct * 100).toFixed(1)}%"></i></span></span>
+            <span class="pc">${x.ok ? "взята" : T.v}</span>
+            <span class="bars"><span class="bar" title="Покрыто дивидендами"><i style="width:${(x.pct * 100).toFixed(1)}%"></i></span><span class="bar" title="Накоплено капитала"><i class="pas" style="width:${(x.kpct * 100).toFixed(1)}%"></i></span></span>
           </button>
           ${open ? `<div class="ig-det">
             <div class="row3">
-              <div class="st"><span class="k">${x.ok ? "Запас сверх цели" : "Не хватает в месяц"}</span><span class="v ${x.ok ? "up" : ""}">${x.ok ? "+" + rub(S.inc - x.L) : rub(x.gap)}</span><span class="t">${x.ok ? "" : S.inc ? "рост на " + nf((x.L / S.inc - 1) * 100, 0) + " %" : "дохода пока нет"}</span></div>
-              <div class="st"><span class="k">Капитал, чтобы жить на дивиденды</span><span class="v">${kfmt(Math.round(x.cap / 1e4) * 1e4)} ₽</span><span class="t">при ${nf(S.y * 100, 1)} % · сейчас ${nf(Math.min(100, S.K0 / x.cap * 100), 1)} %</span></div>
-              <div class="st"><span class="k">Срок до этого капитала</span><span class="v">${T.v}</span><span class="t">${T.t}</span></div>
+              <div class="st"><span class="k">Нужен капитал</span><span class="v">${kfmt(Math.round(x.cap / 1e4) * 1e4)} ₽</span><span class="t">в сегодняшних рублях · есть ${nf(x.kpct * 100, 1)} %</span></div>
+              <div class="st"><span class="k">Срок</span><span class="v">${T.v}</span><span class="t">${T.t}</span></div>
+              <div class="st"><span class="k">В рублях того времени</span><span class="v">${x.LNom && x.n ? kfmt(Math.round(x.LNom / 1e3) * 1e3) + " ₽/мес" : "—"}</span><span class="t">${x.capNom && x.n ? "капитал ≈ " + kfmt(Math.round(x.capNom / 1e5) * 1e5) + " ₽" : "с поправкой на инфляцию"}</span></div>
             </div>
-            <div class="foot"><span class="hint num">Дивиденды сейчас закрывают ${nf(x.ppct * 100, 1)} % этой цели.</span><button class="btn ghost" data-act="ig-del" data-l="${x.L}">Убрать цель</button></div>
+            <div class="foot"><span class="hint num">Дивиденды сейчас закрывают ${nf(x.pct * 100, 1)} % цели.</span><button class="btn ghost" data-act="ig-del" data-l="${x.L}">Убрать цель</button></div>
           </div>` : ""}
         </div>`; }).join("")}</div>
       <form class="ig-add" data-form="ig-add">
         <input type="number" id="ig-new" inputmode="numeric" min="1000" step="1000" placeholder="своя цель, ₽ в месяц" aria-label="Новая цель, рублей в месяц">
         <button class="btn primary" type="submit">Добавить цель</button>
       </form>
-      ${(() => { const q = [150000, 400000, 1500000, 2000000, 3000000].filter(v => !igoals.levels.includes(v)); return q.length ? `<div class="ig-quick">${q.map(v => `<button type="button" data-act="ig-quick" data-l="${v}">+ ${kfmt(v)}</button>`).join("")}${igoals.levels.join() !== IG_DEF.join() ? `<button type="button" data-act="ig-def">вернуть стандартные</button>` : ""}</div>` : ""; })()}
-      <p class="hint">Зелёная полоска — заработок, жёлтая — дивиденды. Срок считается с реинвестированием: капитал сейчас плюс то, что вы откладываете в портфель каждый месяц.</p>`;
+      ${(() => { const q = [10000, 75000, 150000, 400000, 2000000].filter(v => !igoals.levels.includes(v)); return `<div class="ig-quick">${q.map(v => `<button type="button" data-act="ig-quick" data-l="${v}">+ ${kfmt(v)}</button>`).join("")}${igoals.levels.join() !== IG_DEF.join() ? `<button type="button" data-act="ig-def">вернуть стандартные</button>` : ""}</div>`; })()}
+      <p class="hint">Зелёная полоска — какую часть цели уже дают дивиденды, жёлтая — сколько накоплено от нужного капитала. Расчёт: капитал растёт со средней доходностью индекса полной доходности Мосбиржи за выбранный срок минус налог на дивиденды и минус инфляция; каждый месяц добавляется взнос. Прошлая доходность индекса не обещает будущую.</p>`;
     if (focus) { const f = document.getElementById(focus); if (f) f.focus(); }
   }
-  function igOpen() { if (!igDlg.open) { igOpenLv = null; igDlg.showModal(); } renderIG(); }
+  function igOpen() { if (!igDlg.open) { igOpenLv = null; igDlg.showModal(); } renderIG(); if (!mc) loadMc(); }
   igDlg.addEventListener("click", e => {
     if (e.target === igDlg) { igDlg.close(); return; }
     const b = e.target.closest("[data-act]"); if (!b) return;
@@ -1047,15 +1169,21 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     if (a === "ig-close") igDlg.close();
     else if (a === "ig-toggle") { igOpenLv = igOpenLv === l ? null : l; renderIG(); }
     else if (a === "ig-jump") { igOpenLv = l; renderIG(); document.getElementById("ig-lv-" + l)?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
-    else if (a === "ig-basis") { igoals.basis = b.dataset.k; savePath("igoals"); renderIG(); }
+    else if (a === "ig-period") { igoals.period = Number(b.dataset.k); savePath("igoals"); renderIG(); }
     else if (a === "ig-yreset") { e.preventDefault(); igoals.y = null; savePath("igoals"); renderIG(); }
+    else if (a === "ig-creset") { e.preventDefault(); igoals.c = null; savePath("igoals"); renderIG(); }
     else if (a === "ig-del") { igoals.levels = igoals.levels.filter(x => x !== l); if (!igoals.levels.length) igoals.levels = IG_DEF.slice(); igOpenLv = null; savePath("igoals"); renderIG(); }
     else if (a === "ig-quick") { igAdd(l); }
     else if (a === "ig-def") { igoals.levels = IG_DEF.slice(); savePath("igoals"); renderIG(); }
   });
   function igAdd(v) { if (!(v > 0) || igoals.levels.includes(v)) return; igoals.levels = [...igoals.levels, v].sort((a, b) => a - b); igOpenLv = v; savePath("igoals"); renderIG(); }
-  igDlg.addEventListener("input", e => { if (e.target.dataset.ig === "y") { igoals.y = Number(e.target.value); const b = e.target.previousElementSibling?.querySelector("b"); if (b) b.textContent = nf(igoals.y, 1) + " %"; } });
-  igDlg.addEventListener("change", e => { if (e.target.dataset.ig === "y") { savePath("igoals"); renderIG(); } });
+  igDlg.addEventListener("input", e => {
+    const k = e.target.dataset.ig; if (!k) return;
+    if (k === "c") { const v = Number(e.target.value); igoals.c = e.target.value === "" ? null : Number.isFinite(v) && v >= 0 ? v : igoals.c; return; }
+    igoals[k] = Number(e.target.value);
+    const b = e.target.previousElementSibling?.querySelector("b"); if (b) b.textContent = nf(igoals[k], 1) + " %";
+  });
+  igDlg.addEventListener("change", e => { if (e.target.dataset.ig) { savePath("igoals"); renderIG(); } });
   igDlg.addEventListener("submit", e => { e.preventDefault(); const inp = document.getElementById("ig-new"), v = Math.round(Number(inp.value)); if (!(v >= 1000)) { inp.focus(); return; } igAdd(v); });
   igDlg.addEventListener("close", () => { if (tab === "money") softRender(); });
 
@@ -1142,6 +1270,10 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     else if (a === "gh-off") { GH = null; sha = null; try { localStorage.removeItem(GHK); } catch {} setStatus("ok", "На этом устройстве"); render(); }
     else if (a === "h-del") { const i = +b.dataset.i, h = holdings[i]; if (!h) return; holdings.splice(i, 1); savePath("portfolio/holdings"); render(); }
     else if (a === "ig-open") igOpen();
+    else if (a === "sp-focus") { const cur0 = todayIso().slice(0, 7); if (monthOf !== cur0) { monthOf = cur0; render(); } const el = document.getElementById("sp-amt"); if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); el.focus({ preventScroll: true }); } }
+    else if (a === "sp-cat") { spCat = spCat === b.dataset.c ? null : b.dataset.c; spMore = false; render(); }
+    else if (a === "sp-more") { spMore = !spMore; render(); }
+    else if (a === "sp-del") { const m = mon(monthOf); m.log = m.log.filter(x => x.id !== b.dataset.id); savePath("money/" + monthOf); render(); }
     else if (a === "mprev") { monthOf = ymAdd(monthOf, -1); render(); }
     else if (a === "mnext") { monthOf = ymAdd(monthOf, 1); render(); }
     else if (a === "inc-add") { mon(monthOf).inc.push({ id: uid(), t: "", a: null }); savePath("money/" + monthOf); render(); }
@@ -1209,6 +1341,21 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
 
   view.addEventListener("submit", e => {
     if (e.target.dataset.form === "gh") { e.preventDefault(); ghConnect(); return; }
+    if (e.target.dataset.form === "spend") {
+      e.preventDefault();
+      const inp = document.getElementById("sp-amt"), a = Math.round(Number(String(inp.value).replace(",", ".")) * 100) / 100;
+      if (!(a > 0)) { inp.focus(); return; }
+      const c = document.getElementById("sp-cat").value, t = document.getElementById("sp-note").value.trim();
+      let d = document.getElementById("sp-date").value; if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) d = todayIso();
+      const ym = d.slice(0, 7), id = uid();
+      mon(ym).log.push({ id, d, a, c, t });
+      spLastCat = c; try { localStorage.setItem("podsnezhnik.lastcat", c); } catch {}
+      spNew = id; monthOf = ym;
+      savePath("money/" + ym); render();
+      const again = document.getElementById("sp-amt"); if (again) again.focus({ preventScroll: true });
+      setTimeout(() => { spNew = null; }, 1500);
+      return;
+    }
     if (e.target.dataset.form === "hold") {
       e.preventDefault();
       const inp = document.getElementById("new-secid"), kind = document.getElementById("new-kind").value;
@@ -1264,6 +1411,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
   addEventListener("online", () => sync(true));
   setInterval(() => { if (document.visibilityState === "visible") sync(true); }, 60e3);
   setInterval(() => { if (document.visibilityState === "visible" && tab === "money") livePrices(); }, 5 * 60e3);
+  loadIdx(); setInterval(() => { if (document.visibilityState === "visible" && tab === "money") loadIdx(); }, 30e3);
 
   // Переход на новый день, если страница открыта с вечера
   let lastToday = todayIso();
