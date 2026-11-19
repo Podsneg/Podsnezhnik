@@ -1099,7 +1099,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     return `<button class="btn ig-btn" data-act="ig-open" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.2" fill="var(--accent)"/></svg>Цели пассивного дохода<span class="ig-mini">${mini}</span></button>`;
   }
   const igWhen = n => { const d = new Date(); d.setMonth(d.getMonth() + n); return ymName(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`).toLowerCase(); };
-  const igTerm = n => { if (n == null) return { v: "не достижима", t: "при этих взносах и доходности" }; if (n <= 0) return { v: "уже достигнута", t: "капитал покрывает цель" }; const y = Math.floor(n / 12), m = n % 12; return { v: (y ? y + " г. " : "") + (m ? m + " мес" : ""), t: "≈ к " + igWhen(n) }; };
+  const igTerm = n => { if (n == null) return { v: "больше 60 лет", t: "впишите ежемесячный взнос, и срок сократится" }; if (n <= 0) return { v: "уже достигнута", t: "капитал покрывает цель" }; const y = Math.floor(n / 12), m = n % 12; return { v: (y ? y + " г. " : "") + (m ? m + " мес" : ""), t: "≈ к " + igWhen(n) }; };
   function renderIG() {
     if (!igDlg.open) return;
     const S = igStats(), L = S.lv, n = L.length;
