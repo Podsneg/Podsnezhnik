@@ -476,15 +476,23 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
   const money = {};
   let sha = null, gen = 0, pushing = false, again = false;
   const isBlankDay = d => !d || (!d.tasks.length && !d.top.some(x => x.t || x.d) && !Object.values(d.habits).some(Boolean) && d.englishMin == null && d.funMin == null && !d.energy && !d.mood && !d.win && !d.lesson && !d.blocker && !d.note);
-  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, cash, gold, igoals, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || m.log.length || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
+  const snapshot = () => ({ v: 1, updated: new Date().toISOString(), days: Object.fromEntries(Object.entries(days).filter(([, d]) => !isBlankDay(d))), holdings, cash, gold, igoals, money: Object.fromEntries(Object.entries(money).filter(([, m]) => m.inc.some(x => x.a != null) || m.log.length || m.del.length || Object.values(m.exp).some(v => v != null) || m.inv != null)) });
   const lsSave = () => { try { localStorage.setItem(LS, JSON.stringify({ ...snapshot(), quotes, sha, dirty: [...dirty] })); return true; } catch { return false; } };
   const lsLoad = () => { try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } };
   const normHold = items => Array.isArray(items) ? items.filter(h => h && typeof h.secid === "string").map(h => ({ secid: h.secid, kind: ["share", "bond", "gold"].includes(h.kind) ? h.kind : "share", qty: Number.isFinite(h.qty) ? h.qty : null, avg: Number.isFinite(h.avg) ? h.avg : null })) : [];
   const normMon = (k, o) => {
     const log = Array.isArray(o?.log) ? o.log.filter(x => x && Number.isFinite(x.a) && x.a > 0).map(x => ({ id: String(x.id || uid()), d: /^\d{4}-\d{2}-\d{2}$/.test(x.d) ? x.d : k + "-01", a: x.a, c: String(x.c || "Прочее"), t: String(x.t ?? "") })) : [];
     // Старые суммы по категориям превращаются в записи журнала
-    if (o?.exp && typeof o.exp === "object") Object.entries(o.exp).forEach(([c, a]) => { if (Number.isFinite(a) && a > 0) log.push({ id: uid(), d: k + "-01", a, c, t: "итог месяца, внесён одной суммой" }); });
-    return { month: k, inc: Array.isArray(o?.inc) ? o.inc.map(x => ({ id: String(x.id || uid()), t: String(x.t ?? ""), a: Number.isFinite(x.a) ? x.a : null })) : [], log, exp: {}, inv: Number.isFinite(o?.inv) ? o.inv : null };
+    if (o?.exp && typeof o.exp === "object") Object.entries(o.exp).forEach(([c, a]) => { if (Number.isFinite(a) && a > 0) log.push({ id: "m-" + k + "-" + c, d: k + "-01", a, c, t: "итог месяца, внесён одной суммой" }); });
+    const del = Array.isArray(o?.del) ? o.del.map(String).slice(-500) : [];
+    return { month: k, del, inc: Array.isArray(o?.inc) ? o.inc.map(x => ({ id: String(x.id || uid()), t: String(x.t ?? ""), a: Number.isFinite(x.a) ? x.a : null })) : [], log: log.filter(x => !del.includes(x.id)), exp: {}, inv: Number.isFinite(o?.inv) ? o.inv : null };
+  };
+  // Если месяц правили и здесь, и на другом устройстве, записи журнала объединяются, а не затирают друг друга
+  const mergeMon = (loc, rem) => {
+    const del = [...new Set([...loc.del, ...rem.del])].slice(-500);
+    const seen = new Set(), log = [];
+    [...loc.log, ...rem.log].forEach(x => { if (!seen.has(x.id) && !del.includes(x.id)) { seen.add(x.id); log.push(x); } });
+    return { ...loc, del, log };
   };
   function applyData(data) {
     if (!data || typeof data !== "object") return;
@@ -492,7 +500,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     if (!dirty.has("portfolio/holdings") && Array.isArray(data.holdings)) holdings = normHold(data.holdings);
     if (!dirty.has("gold") && data.gold && typeof data.gold === "object") gold = { g: Number.isFinite(data.gold.g) ? data.gold.g : null, avg: Number.isFinite(data.gold.avg) ? data.gold.avg : null };
     if (!dirty.has("cash") && data.cash && typeof data.cash === "object") cash = { broker: Number.isFinite(data.cash.broker) ? data.cash.broker : null, hand: Number.isFinite(data.cash.hand) ? data.cash.hand : null };
-    Object.entries(data.money || {}).forEach(([k, v]) => { if (!dirty.has("money/" + k)) money[k] = normMon(k, v); });
+    Object.entries(data.money || {}).forEach(([k, v]) => { const r = normMon(k, v); money[k] = dirty.has("money/" + k) && money[k] ? mergeMon(money[k], r) : r; });
     if (!dirty.has("igoals") && data.igoals && typeof data.igoals === "object") {
       const lv = Array.isArray(data.igoals.levels) ? [...new Set(data.igoals.levels.filter(x => Number.isFinite(x) && x > 0))].sort((a, b) => a - b) : IG_DEF.slice();
       const g = data.igoals, fin = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi ? v : null;
@@ -507,7 +515,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
   const b64e = s => { const b = new TextEncoder().encode(s); let r = ""; for (let i = 0; i < b.length; i += 0x8000) r += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(r); };
   function tfetch(u, o = {}, ms = 15000) {
     const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
-    return fetch(u, { ...o, signal: c.signal }).catch(e => { throw new Error(e.name === "AbortError" ? "GitHub не ответил, проверьте интернет" : "нет связи с GitHub"); }).finally(() => clearTimeout(t));
+    return fetch(u, { ...o, signal: c.signal }).catch(e => { throw new Error(e.name === "AbortError" ? "сервер не ответил, проверьте интернет" : "нет связи с сервером"); }).finally(() => clearTimeout(t));
   }
   async function ghRead(f) {
     const r = await tfetch(ghUrl(f) + "?t=" + Date.now(), { headers: ghHdr(), cache: "no-store" });
@@ -827,7 +835,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
   let monthOf = todayIso().slice(0, 7);
   const ymAdd = (ym, n) => { const [y, m] = ym.split("-").map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
   const ymName = ym => { const [y, m] = ym.split("-").map(Number); const t = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1)); return t[0].toUpperCase() + t.slice(1).replace(" г.", ""); };
-  const mblank = ym => ({ month: ym, inc: [{ id: uid(), t: "Зарплата", a: null }], log: [], exp: {}, inv: null });
+  const mblank = ym => ({ month: ym, inc: [{ id: uid(), t: "Зарплата", a: null }], log: [], del: [], exp: {}, inv: null });
   const spentOf = m => (m?.log || []).reduce((a, x) => a + x.a, 0);
   let spCat = null, spMore = false, spNew = null, spLastCat = "Еда";
   try { spLastCat = localStorage.getItem("podsnezhnik.lastcat") || "Еда"; } catch {}
@@ -884,7 +892,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     const I = m.inc.reduce((a, x) => a + (Number(x.a) || 0), 0);
     const E = spentOf(m);
     const R = I - E, rate = I ? R / I : null;
-    const hist = Array.from({ length: 6 }, (_, i) => ymAdd(monthOf, -i)).filter(k => money[k]).map(k => {
+    const hist = Array.from({ length: 6 }, (_, i) => ymAdd(monthOf, -i)).filter(k => money[k] && (money[k].inc.some(x => x.a != null) || money[k].log.length || money[k].inv != null)).map(k => {
       const x = money[k], i2 = x.inc.reduce((a, y) => a + (Number(y.a) || 0), 0), e2 = spentOf(x);
       return { k, I: i2, E: e2, R: i2 - e2, rate: i2 ? (i2 - e2) / i2 : null, inv: Number(x.inv) || 0 };
     });
@@ -971,7 +979,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
           <div class="card-h"><h3 id="h-dv">Ближайшие дивиденды</h3><span class="meta">сумма после НДФЛ</span></div>
           ${P.upcoming.length ? `<ul class="divs">${P.upcoming.map(x => `<li>
             <span class="when num">${ddmm(x.r)}.${x.r.slice(2, 4)}</span>
-            <span class="what">${esc(NAMES[x.secid] || x.secid)} ·${nf(x.v, 2)} ₽ на акцию<span class="chip ${x.s === "forecast" ? "fc" : "decl"}">${x.s === "forecast" ? "прогноз" : "объявлен"}</span><small>купить до ${ddmm(prevBizDay(x.r))} включительно, это дата закрытия реестра</small></span>
+            <span class="what">${esc(NAMES[x.secid] || x.secid)} · ${nf(x.v, 2)} ₽ на акцию<span class="chip ${x.s === "forecast" ? "fc" : "decl"}">${x.s === "forecast" ? "прогноз" : "объявлен"}</span><small>купить до ${ddmm(prevBizDay(x.r))} включительно, это дата закрытия реестра</small></span>
             <span class="sum">${rub(x.qty * x.v * TAX)}</span></li>`).join("")}</ul>` : `<p class="empty">${quotes ? "Впишите количество акций, и здесь появятся ближайшие выплаты." : "Данные появятся после первого обновления."}</p>`}
           <p class="hint">Прогнозы взяты с dohod.ru и могут измениться. Выплата приходит обычно через 1–4 недели после закрытия реестра.</p>
         </section>
@@ -1022,7 +1030,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
           <div class="t">${isCur ? `сегодня ${rub(today)} · ` : ""}в среднем ${rub(E / dayN)} в день · ${m.log.length} ${m.log.length % 10 === 1 && m.log.length % 100 !== 11 ? "запись" : [2, 3, 4].includes(m.log.length % 10) && ![12, 13, 14].includes(m.log.length % 100) ? "записи" : "записей"}</div>
         </div>
         <form class="sp-add" data-form="spend" autocomplete="off">
-          <input class="amt" id="sp-amt" type="number" inputmode="decimal" min="0" step="any" placeholder="сумма, ₽" aria-label="Сумма расхода, рублей" required>
+          <input class="amt" id="sp-amt" type="text" inputmode="decimal" placeholder="сумма, ₽" aria-label="Сумма расхода, рублей" required>
           <select id="sp-cat" aria-label="Категория">${EXP.map(c => `<option ${c === spLastCat ? "selected" : ""}>${c}</option>`).join("")}</select>
           <input id="sp-note" type="text" maxlength="80" placeholder="на что, необязательно" aria-label="Комментарий">
           <input id="sp-date" type="date" value="${defDate}" aria-label="Дата">
@@ -1047,9 +1055,9 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
   const idxHtml = () => idx ? `<span class="idx" id="idx" title="Индекс Мосбиржи, обновляется каждые 30 секунд"><span class="live"></span>IMOEX <b>${nf(idx.v, 2)}</b><span class="${cls(idx.chp)}">${spct(idx.chp / 100)}</span><span>${esc(idx.t)}</span></span>` : `<span class="idx" id="idx"><span class="live"></span>IMOEX <b>…</b></span>`;
   async function loadIdx() {
     try {
-      const x = await (await tfetch(`${ISS}/engines/stock/markets/index/boards/SNDX/securities/IMOEX.json?iss.meta=off&iss.only=marketdata&marketdata.columns=CURRENTVALUE,LASTCHANGEPRC,UPDATETIME`, { cache: "no-store" })).json();
-      const r = x.marketdata.data[0]; if (!r || !(r[0] > 0)) return;
-      idx = { v: r[0], chp: r[1] ?? 0, t: String(r[2] || "").slice(0, 5) };
+      const x = await (await tfetch(`${ISS}/engines/stock/markets/index/boards/SNDX/securities/IMOEX.json?iss.meta=off&iss.only=marketdata&marketdata.columns=CURRENTVALUE,LASTVALUE,LASTCHANGEPRC,UPDATETIME`, { cache: "no-store" })).json();
+      const r = x.marketdata.data[0], v = r?.[0] > 0 ? r[0] : r?.[1]; if (!(v > 0)) return;
+      idx = { v, chp: r[0] > 0 ? r[2] ?? 0 : 0, t: r[0] > 0 ? String(r[3] || "").slice(0, 5) : "закрытие" };
       const el = document.getElementById("idx"); if (el) el.outerHTML = idxHtml();
     } catch {}
   }
@@ -1062,8 +1070,8 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
       const lastRows = await (await tfetch(`${ISS}/history/engines/stock/markets/index/securities/MCFTR.json?iss.meta=off&iss.only=history&history.columns=TRADEDATE,CLOSE&from=${addDays(t, -14)}`)).json();
       const now = lastRows.history.data.filter(y => y[1] > 0).pop(); if (!now) return;
       const o = { day: t, now: { d: now[0], v: now[1] } };
-      for (const y of [5, 10, 15]) { const p = await at(`${Number(t.slice(0, 4)) - y}${t.slice(4)}`); if (p) o["y" + y] = { ...p, cagr: Math.pow(now[1] / p.v, 365.25 / daysBetween(p.d, now[0])) - 1 }; }
-      mc = o; try { localStorage.setItem(MCK, JSON.stringify(o)); } catch {}
+      for (const y of [5, 10, 15]) { const p = await at(`${Number(t.slice(0, 4)) - y}${t.slice(4, 8)}${t.slice(5) === "02-29" ? "28" : t.slice(8)}`); if (p) o["y" + y] = { ...p, cagr: Math.pow(now[1] / p.v, 365.25 / daysBetween(p.d, now[0])) - 1 }; }
+      mc = o; if (o.y5 && o.y10 && o.y15) try { localStorage.setItem(MCK, JSON.stringify(o)); } catch {}
       if (igDlg.open) renderIG();
     } catch {}
   }
@@ -1080,7 +1088,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     const six = Array.from({ length: 6 }, (_, i) => ymAdd(now, -i)).map(k => money[k]).filter(Boolean);
     const invs = six.map(m => m.inv).filter(v => Number.isFinite(v) && v > 0);
     const autoC = invs.length ? invs.reduce((a, b) => a + b, 0) / invs.length : 0;
-    const C = igoals.c ?? autoC;
+    const C = igoals.c ?? autoC; igStats.lastC = C;
     const mcp = mc?.["y" + igoals.period];
     const R = mcp ? mcp.cagr : 0.12;
     const infl = igoals.infl / 100;
@@ -1098,8 +1106,8 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     const mini = c ? `${nf(c.pct * 100, c.pct < 0.1 ? 1 : 0)} % до ${kfmt(c.L)}` : "все взяты";
     return `<button class="btn ig-btn" data-act="ig-open" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.2" fill="var(--accent)"/></svg>Цели пассивного дохода<span class="ig-mini">${mini}</span></button>`;
   }
-  const igWhen = n => { const d = new Date(); d.setMonth(d.getMonth() + n); return ymName(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`).toLowerCase(); };
-  const igTerm = n => { if (n == null) return { v: "больше 60 лет", t: "впишите ежемесячный взнос, и срок сократится" }; if (n <= 0) return { v: "уже достигнута", t: "капитал покрывает цель" }; const y = Math.floor(n / 12), m = n % 12; return { v: (y ? y + " г. " : "") + (m ? m + " мес" : ""), t: "≈ к " + igWhen(n) }; };
+  const igWhen = n => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + n); return ymName(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`).toLowerCase(); };
+  const igTerm = n => { if (n == null) return { v: "больше 60 лет", t: igoals.c || igStats.lastC ? "поднимите взнос или доходность" : "впишите ежемесячный взнос, и срок сократится" }; if (n <= 0) return { v: "уже достигнута", t: "капитал покрывает цель" }; const y = Math.floor(n / 12), m = n % 12; return { v: (y ? y + " г. " : "") + (m ? m + " мес" : ""), t: "≈ к " + igWhen(n) }; };
   function renderIG() {
     if (!igDlg.open) return;
     const S = igStats(), L = S.lv, n = L.length;
@@ -1237,7 +1245,8 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
   }
   const typing = () => { const a = document.activeElement; return a && view.contains(a) && (a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && a.type !== "checkbox")); };
   let pendingRender = false;
-  const softRender = () => { if (igDlg.open) renderIG(); if (typing()) { pendingRender = true; return; } render(); };
+  const igTyping = () => { const a = document.activeElement; return igDlg.open && igDlg.contains(a) && a.tagName === "INPUT" && a.type !== "range"; };
+  const softRender = () => { if (igDlg.open && !igTyping()) renderIG(); if (typing()) { pendingRender = true; return; } render(); };
   view.addEventListener("focusout", () => setTimeout(() => { if (pendingRender && !typing()) { pendingRender = false; render(); } }, 0));
 
   // ---------- Действия ----------
@@ -1267,13 +1276,13 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     }
     else if (a === "scale") { const k = b.dataset.k, v = Number(b.dataset.v); d[k] = d[k] === v ? 0 : v; save(cur); render(); }
     else if (a === "gh-sync") { setStatus("busy", "Синхронизирую…"); sync(false); }
-    else if (a === "gh-off") { GH = null; sha = null; try { localStorage.removeItem(GHK); } catch {} setStatus("ok", "На этом устройстве"); render(); }
+    else if (a === "gh-off") { GH = null; sha = null; try { localStorage.removeItem(GHK); } catch {} banner.hidden = false; banner.innerHTML = 'Записи сейчас хранятся только в этом браузере. <a href="#sync">Подключите GitHub</a>, чтобы они были на всех устройствах.'; setStatus("ok", "На этом устройстве"); render(); }
     else if (a === "h-del") { const i = +b.dataset.i, h = holdings[i]; if (!h) return; holdings.splice(i, 1); savePath("portfolio/holdings"); render(); }
     else if (a === "ig-open") igOpen();
     else if (a === "sp-focus") { const cur0 = todayIso().slice(0, 7); if (monthOf !== cur0) { monthOf = cur0; render(); } const el = document.getElementById("sp-amt"); if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); el.focus({ preventScroll: true }); } }
     else if (a === "sp-cat") { spCat = spCat === b.dataset.c ? null : b.dataset.c; spMore = false; render(); }
     else if (a === "sp-more") { spMore = !spMore; render(); }
-    else if (a === "sp-del") { const m = mon(monthOf); m.log = m.log.filter(x => x.id !== b.dataset.id); savePath("money/" + monthOf); render(); }
+    else if (a === "sp-del") { const m = mon(monthOf); m.log = m.log.filter(x => x.id !== b.dataset.id); m.del.push(b.dataset.id); savePath("money/" + monthOf); render(); }
     else if (a === "mprev") { monthOf = ymAdd(monthOf, -1); render(); }
     else if (a === "mnext") { monthOf = ymAdd(monthOf, 1); render(); }
     else if (a === "inc-add") { mon(monthOf).inc.push({ id: uid(), t: "", a: null }); savePath("money/" + monthOf); render(); }
@@ -1343,7 +1352,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     if (e.target.dataset.form === "gh") { e.preventDefault(); ghConnect(); return; }
     if (e.target.dataset.form === "spend") {
       e.preventDefault();
-      const inp = document.getElementById("sp-amt"), a = Math.round(Number(String(inp.value).replace(",", ".")) * 100) / 100;
+      const inp = document.getElementById("sp-amt"), a = Math.round(Number(String(inp.value).replace(/\s/g, "").replace(",", ".")) * 100) / 100;
       if (!(a > 0)) { inp.focus(); return; }
       const c = document.getElementById("sp-cat").value, t = document.getElementById("sp-note").value.trim();
       let d = document.getElementById("sp-date").value; if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) d = todayIso();
@@ -1415,7 +1424,7 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
 
   // Переход на новый день, если страница открыта с вечера
   let lastToday = todayIso();
-  setInterval(() => { const t = todayIso(); if (t !== lastToday) { if (cur === lastToday) cur = t; lastToday = t; softRender(); } }, 60000);
+  setInterval(() => { const t = todayIso(); if (t !== lastToday) { if (cur === lastToday) cur = t; if (monthOf === lastToday.slice(0, 7)) monthOf = t.slice(0, 7); lastToday = t; softRender(); } }, 60000);
 })();
 </script>
 </body>
