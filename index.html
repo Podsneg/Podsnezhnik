@@ -526,7 +526,16 @@ dialog.ig::backdrop { background: rgba(10, 18, 15, .45); backdrop-filter: blur(2
     const j = await r.json();
     return { sha: j.sha, data: j.content ? JSON.parse(b64d(j.content)) : null };
   }
-  async function pull() { const r = await ghRead(FILE); sha = r.sha; applyData(r.data); lsSave(); }
+  async function pull() {
+    const r = await ghRead(FILE); sha = r.sha;
+    // Записи, которые есть только на этом устройстве и так и не ушли в репозиторий, отправляются заново
+    if (r.data) {
+      const rd = r.data.days || {}, rm = r.data.money || {};
+      Object.entries(days).forEach(([k, d]) => { if (!rd[k] && !isBlankDay(d)) dirty.add("days/" + k); });
+      Object.entries(money).forEach(([k, m]) => { const known = new Set([...(rm[k]?.log || []).map(x => String(x.id)), ...(rm[k]?.del || []).map(String)]); if (m.log.some(x => !known.has(x.id) && !x.id.startsWith("m-"))) dirty.add("money/" + k); });
+    }
+    applyData(r.data); lsSave();
+  }
   async function push() {
     if (!GH) { lsSave() ? setStatus("ok", "Сохранено на этом устройстве") : setStatus("err", "Браузер не даёт сохранять"); return; }
     if (pushing) { again = true; return; }
